@@ -60,7 +60,7 @@ export default function ContactFormClient({ config, formTitle, introText, submit
     fd.append('message', fields.message)
     if (config.gdprConsentEnabled) fd.append('gdprConsent', fields.gdprConsent ? 'true' : 'false')
 
-    const res = await fetch('/api/contact/submit', { method: 'POST', body: fd })
+    const res = await fetch('/api/m/contact-form/submit', { method: 'POST', body: fd })
     const data = await res.json().catch(() => ({})) as { success?: boolean; errors?: Record<string, string> }
 
     if (res.ok && data.success) {

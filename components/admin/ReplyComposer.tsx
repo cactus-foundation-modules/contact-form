@@ -18,7 +18,7 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/admin/contact-form/signature')
+    fetch('/api/m/contact-form/admin/signature')
       .then((r) => r.json())
       .then((data: { signature: string | null }) => setSignature(data.signature))
   }, [])
@@ -32,7 +32,7 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
     if (!body.trim()) return
     setSending(true)
     setError(null)
-    const res = await fetch(`/api/admin/contact-form/submissions/${submissionId}/reply`, {
+    const res = await fetch(`/api/m/contact-form/admin/submissions/${submissionId}/reply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ body }),
@@ -103,7 +103,7 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
           <button type="submit" className="btn btn-primary" disabled={sending || !body.trim()}>
             {sending ? 'Sending...' : 'Send Reply'}
           </button>
-          <a href="/cactus-admin/contact-form/my-signature" style={{ fontSize: '0.875rem', color: 'var(--color-accent)' }}>
+          <a href="/cactus-admin/m/contact-form/my-signature" style={{ fontSize: '0.875rem', color: 'var(--color-accent)' }}>
             Edit signature
           </a>
         </div>

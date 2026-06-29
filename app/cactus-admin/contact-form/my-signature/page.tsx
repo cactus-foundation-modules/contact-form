@@ -11,7 +11,7 @@ export default function MySignaturePage() {
   const [preview, setPreview] = useState(false)
 
   useEffect(() => {
-    fetch('/api/admin/contact-form/signature')
+    fetch('/api/m/contact-form/admin/signature')
       .then((r) => r.json())
       .then((data: { signature: string | null }) => {
         setSignature(data.signature ?? '')
@@ -23,7 +23,7 @@ export default function MySignaturePage() {
     e.preventDefault()
     setSaving(true)
     setSaved(false)
-    const res = await fetch('/api/admin/contact-form/signature', {
+    const res = await fetch('/api/m/contact-form/admin/signature', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ signature: signature || null }),

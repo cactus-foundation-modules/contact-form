@@ -33,13 +33,13 @@ export default async function ContactInboxPage({ searchParams }: Props) {
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {canExport && (
             <a
-              href={`/api/admin/contact-form/export${status !== 'all' ? `?status=${status}` : ''}`}
+              href={`/api/m/contact-form/admin/export${status !== 'all' ? `?status=${status}` : ''}`}
               className="btn btn-secondary btn-sm"
             >
               Export CSV
             </a>
           )}
-          <Link href="/cactus-admin/contact-form/config" className="btn btn-secondary btn-sm">
+          <Link href="/cactus-admin/m/contact-form/config" className="btn btn-secondary btn-sm">
             Settings
           </Link>
         </div>

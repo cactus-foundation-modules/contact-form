@@ -11,7 +11,7 @@ export default function ContactFormConfigPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/admin/contact-form/config')
+    fetch('/api/m/contact-form/admin/config')
       .then((r) => r.json())
       .then((data) => { setConfig(data); setLoading(false) })
       .catch(() => { setError('Failed to load config.'); setLoading(false) })
@@ -28,7 +28,7 @@ export default function ContactFormConfigPage() {
     setSaved(false)
     setError(null)
     try {
-      const res = await fetch('/api/admin/contact-form/config', {
+      const res = await fetch('/api/m/contact-form/admin/config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),

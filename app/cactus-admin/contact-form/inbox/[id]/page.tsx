@@ -33,7 +33,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
     <div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Link href="/cactus-admin/contact-form/inbox" className="btn btn-secondary btn-sm">
+          <Link href="/cactus-admin/m/contact-form/inbox" className="btn btn-secondary btn-sm">
             ← Inbox
           </Link>
           <h1 className="page-title" style={{ margin: 0 }}>
@@ -41,7 +41,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
           </h1>
         </div>
         {canDelete && (
-          <form method="POST" action={`/api/admin/contact-form/submissions/${id}`}>
+          <form method="POST" action={`/api/m/contact-form/admin/submissions/${id}`}>
             <input type="hidden" name="_method" value="DELETE" />
             <button
               type="submit"

@@ -62,7 +62,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
     const body = action === 'delete'
       ? { ids: [...selected], delete: true }
       : { ids: [...selected], status: action }
-    await fetch('/api/admin/contact-form/submissions', {
+    await fetch('/api/m/contact-form/admin/submissions', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -78,7 +78,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
         {TABS.map((tab) => (
           <Link
             key={tab.value}
-            href={`/cactus-admin/contact-form/inbox?status=${tab.value}`}
+            href={`/cactus-admin/m/contact-form/inbox?status=${tab.value}`}
             className={`btn btn-sm ${status === tab.value ? 'btn-primary' : 'btn-secondary'}`}
           >
             {tab.label}
@@ -137,13 +137,13 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                     />
                   </td>
                   <td>
-                    <Link href={`/cactus-admin/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <Link href={`/cactus-admin/m/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <div>{s.name}</div>
                       <div style={{ fontSize: '0.8125rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>{s.email}</div>
                     </Link>
                   </td>
                   <td>
-                    <Link href={`/cactus-admin/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <Link href={`/cactus-admin/m/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <div>{s.subject ?? s.message.slice(0, 60)}{!s.subject && s.message.length > 60 ? '…' : ''}</div>
                     </Link>
                   </td>
@@ -165,7 +165,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
       {totalPages > 1 && (
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', justifyContent: 'center' }}>
           {page > 1 && (
-            <Link href={`/cactus-admin/contact-form/inbox?status=${status}&page=${page - 1}`} className="btn btn-secondary btn-sm">
+            <Link href={`/cactus-admin/m/contact-form/inbox?status=${status}&page=${page - 1}`} className="btn btn-secondary btn-sm">
               Previous
             </Link>
           )}
@@ -173,7 +173,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
             Page {page} of {totalPages}
           </span>
           {page < totalPages && (
-            <Link href={`/cactus-admin/contact-form/inbox?status=${status}&page=${page + 1}`} className="btn btn-secondary btn-sm">
+            <Link href={`/cactus-admin/m/contact-form/inbox?status=${status}&page=${page + 1}`} className="btn btn-secondary btn-sm">
               Next
             </Link>
           )}
