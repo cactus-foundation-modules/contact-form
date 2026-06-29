@@ -1,0 +1,19 @@
+{
+  "name": "contact-form",
+  "version": "0.1.0",
+  "tablePrefix": "cf_",
+  "description": "A configurable contact form with admin inbox, reply composer, and notification emails.",
+  "permissions": [
+    "contact.view",
+    "contact.reply",
+    "contact.delete",
+    "contact.export",
+    "contact.configure"
+  ],
+  "navEntries": [
+    { "label": "Inbox", "path": "/contact-form/inbox", "icon": "✉️", "permission": "contact.view" },
+    { "label": "Contact Settings", "path": "/contact-form/config", "icon": "⚙️", "permission": "contact.configure" }
+  ],
+  "requiredEnvVars": [],
+  "cookieCategories": []
+}
