@@ -1,6 +1,6 @@
 # Cactus Contact Form Module
 
-A configurable contact form module for [Cactus](https://github.com/usersaynoso/cactus).
+A configurable contact form module for [Cactus](https://github.com/usersaynoso/cactus-foundation).
 
 Provides a Puck page builder block, admin submission inbox, markdown reply composer,
 notification emails, auto-reply, Turnstile spam protection, rate limiting, GDPR consent,
