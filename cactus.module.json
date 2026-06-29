@@ -15,5 +15,6 @@
     { "label": "Contact Settings", "path": "/m/contact-form/config", "icon": "⚙️", "permission": "contact.configure" }
   ],
   "requiredEnvVars": [],
-  "cookieCategories": []
+  "cookieCategories": [],
+  "teardown": ["ContactFormConfig", "ContactSubmission", "ContactSubmissionReply"]
 }
