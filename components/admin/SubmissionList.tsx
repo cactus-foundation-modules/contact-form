@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAdminPath } from '@/components/admin/AdminPathContext'
 import type { ContactSubmission } from '@/modules/contact-form/lib/types'
 
 type Props = {
@@ -35,6 +36,8 @@ function relativeDate(date: Date): string {
 
 export default function SubmissionList({ submissions, total, page, totalPages, status, canDelete }: Props) {
   const router = useRouter()
+  const adminPath = useAdminPath()
+  const base = `/${adminPath}`
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
 
@@ -78,7 +81,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
         {TABS.map((tab) => (
           <Link
             key={tab.value}
-            href={`/cactus-admin/m/contact-form/inbox?status=${tab.value}`}
+            href={`${base}/m/contact-form/inbox?status=${tab.value}`}
             className={`btn btn-sm ${status === tab.value ? 'btn-primary' : 'btn-secondary'}`}
           >
             {tab.label}
@@ -119,6 +122,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                 </th>
                 <th>From</th>
                 <th>Subject / Message</th>
+                <th>Page</th>
                 <th>Status</th>
                 <th>Date</th>
               </tr>
@@ -137,15 +141,18 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                     />
                   </td>
                   <td>
-                    <Link href={`/cactus-admin/m/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <Link href={`${base}/m/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <div>{s.name}</div>
                       <div style={{ fontSize: '0.8125rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>{s.email}</div>
                     </Link>
                   </td>
                   <td>
-                    <Link href={`/cactus-admin/m/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <Link href={`${base}/m/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <div>{s.subject ?? s.message.slice(0, 60)}{!s.subject && s.message.length > 60 ? '…' : ''}</div>
                     </Link>
+                  </td>
+                  <td style={{ fontSize: '0.8125rem' }}>
+                    {s.sourceLabel ?? <span style={{ color: 'var(--color-text-muted)' }}>Unknown</span>}
                   </td>
                   <td>
                     <span className={`badge ${s.status === 'unread' ? 'badge-info' : s.status === 'archived' ? 'badge-muted' : ''}`}>
@@ -165,7 +172,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
       {totalPages > 1 && (
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', justifyContent: 'center' }}>
           {page > 1 && (
-            <Link href={`/cactus-admin/m/contact-form/inbox?status=${status}&page=${page - 1}`} className="btn btn-secondary btn-sm">
+            <Link href={`${base}/m/contact-form/inbox?status=${status}&page=${page - 1}`} className="btn btn-secondary btn-sm">
               Previous
             </Link>
           )}
@@ -173,7 +180,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
             Page {page} of {totalPages}
           </span>
           {page < totalPages && (
-            <Link href={`/cactus-admin/m/contact-form/inbox?status=${status}&page=${page + 1}`} className="btn btn-secondary btn-sm">
+            <Link href={`${base}/m/contact-form/inbox?status=${status}&page=${page + 1}`} className="btn btn-secondary btn-sm">
               Next
             </Link>
           )}

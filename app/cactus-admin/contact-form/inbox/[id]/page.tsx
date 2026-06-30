@@ -4,6 +4,7 @@ import { getSubmission, updateSubmission } from '@/modules/contact-form/lib/db'
 import { markdownToHtml } from '@/lib/sanitize'
 import ReplyComposer from '@/modules/contact-form/components/admin/ReplyComposer'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 
 export const metadata = { title: 'Submission — Contact Inbox' }
@@ -29,11 +30,13 @@ export default async function SubmissionDetailPage({ params }: Props) {
   const canReply  = await hasPermission(user, 'contact.reply')
   const canDelete = await hasPermission(user, 'contact.delete')
 
+  const adminPath = (await headers()).get('x-cactus-admin-path') ?? ''
+
   return (
     <div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Link href="/cactus-admin/m/contact-form/inbox" className="btn btn-secondary btn-sm">
+          <Link href={`/${adminPath}/m/contact-form/inbox`} className="btn btn-secondary btn-sm">
             ← Inbox
           </Link>
           <h1 className="page-title" style={{ margin: 0 }}>
@@ -78,6 +81,12 @@ export default async function SubmissionDetailPage({ params }: Props) {
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Received</div>
             <div style={{ fontSize: '0.875rem' }}>{submission.createdAt.toLocaleString('en-GB')}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Page</div>
+            <div style={{ fontSize: '0.875rem' }}>
+              {submission.sourceLabel ?? <span style={{ color: 'var(--color-text-muted)' }}>Unknown</span>}
+            </div>
           </div>
           {submission.gdprConsent && (
             <div>

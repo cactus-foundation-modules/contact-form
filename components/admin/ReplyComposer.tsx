@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAdminPath } from '@/components/admin/AdminPathContext'
 import { markdownToHtml } from '@/lib/sanitize'
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export default function ReplyComposer({ submissionId, submissionEmail }: Props) {
   const router = useRouter()
+  const adminPath = useAdminPath()
   const [body, setBody] = useState('')
   const [signature, setSignature] = useState<string | null>(null)
   const [preview, setPreview] = useState(false)
@@ -104,7 +106,7 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
           <button type="submit" className="btn btn-primary" disabled={sending || !body.trim()}>
             {sending ? 'Sending...' : 'Send Reply'}
           </button>
-          <Link href="/cactus-admin/m/contact-form/my-signature" style={{ fontSize: '0.875rem', color: 'var(--color-accent)' }}>
+          <Link href={`/${adminPath}/m/contact-form/my-signature`} style={{ fontSize: '0.875rem', color: 'var(--color-accent)' }}>
             Edit signature
           </Link>
         </div>
