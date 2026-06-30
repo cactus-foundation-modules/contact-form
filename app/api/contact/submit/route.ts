@@ -4,6 +4,7 @@ import { validateSubmission, sanitiseField } from '@/modules/contact-form/lib/va
 import { sendSubmissionNotification, sendAutoReply } from '@/modules/contact-form/lib/email'
 import { checkContactRateLimit } from '@/modules/contact-form/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/auth/turnstile'
+import { isTurnstileConfigured } from '@/lib/config/env'
 import { prisma } from '@/lib/db/prisma'
 import { blockPropsToConfig, type ContactFormBlockProps } from '@/modules/contact-form/components/puck/ContactFormBlock'
 import type { ContactFormConfig } from '@/modules/contact-form/lib/types'
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
   const { config, sourceType, sourceId, sourceLabel } = resolved
 
   // Step 3: Turnstile verification
-  if (config.turnstileEnabled) {
+  if (config.turnstileEnabled && isTurnstileConfigured()) {
     const ok = await verifyTurnstile(raw.turnstileToken)
     if (!ok) {
       return NextResponse.json(

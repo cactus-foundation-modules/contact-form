@@ -108,9 +108,9 @@ const PADDING_MAP: Record<string, string> = {
 
 // RSC version: async server component — derives config from block props and renders the real form.
 // Registered in puckRscConfig so page visitors see the actual form.
-export async function ContactFormBlockRsc(props: ContactFormBlockProps & { puck?: { id?: string } }) {
+export async function ContactFormBlockRsc(props: ContactFormBlockProps & { id?: string }) {
   const config = blockPropsToConfig(props)
-  const blockId = props.puck?.id ?? ''
+  const blockId = props.id ?? ''
   return (
     <ContactFormClient
       config={config}
