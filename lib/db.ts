@@ -25,8 +25,8 @@ export async function getContactFormConfig(): Promise<ContactFormConfig | null> 
     retention_days: number; success_message: string;
   }>>`SELECT * FROM "cf_contact_form_config" LIMIT 1`
 
-  if (!rows.length) return null
   const r = rows[0]
+  if (!r) return null
   return {
     id: r.id,
     createdAt: r.created_at,
@@ -183,7 +183,8 @@ export async function getSubmission(id: string): Promise<SubmissionWithReplies |
     `,
   ])
 
-  if (!submissionRows.length) return null
+  const submissionRow = submissionRows[0]
+  if (!submissionRow) return null
 
   const replies: ContactSubmissionReply[] = replyRows.map((r) => ({
     id: r.id,
@@ -196,7 +197,7 @@ export async function getSubmission(id: string): Promise<SubmissionWithReplies |
     signatureSnapshot: r.signature_snapshot,
   }))
 
-  return { ...mapRow(submissionRows[0]), replies }
+  return { ...mapRow(submissionRow), replies }
 }
 
 export async function updateSubmission(id: string, fields: { status?: string }): Promise<void> {
@@ -259,8 +260,8 @@ export async function getUserProfile(userId: string): Promise<ContactUserProfile
     id: string; user_id: string; signature: string | null; created_at: Date; updated_at: Date;
   }>>`SELECT * FROM "cf_user_profiles" WHERE "user_id" = ${userId} LIMIT 1`
 
-  if (!rows.length) return null
   const r = rows[0]
+  if (!r) return null
   return { id: r.id, userId: r.user_id, signature: r.signature, createdAt: r.created_at, updatedAt: r.updated_at }
 }
 
