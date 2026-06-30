@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { markdownToHtml } from '@/lib/sanitize'
 
 type Props = {
@@ -103,9 +104,9 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
           <button type="submit" className="btn btn-primary" disabled={sending || !body.trim()}>
             {sending ? 'Sending...' : 'Send Reply'}
           </button>
-          <a href="/cactus-admin/m/contact-form/my-signature" style={{ fontSize: '0.875rem', color: 'var(--color-accent)' }}>
+          <Link href="/cactus-admin/m/contact-form/my-signature" style={{ fontSize: '0.875rem', color: 'var(--color-accent)' }}>
             Edit signature
-          </a>
+          </Link>
         </div>
       </form>
     </div>
