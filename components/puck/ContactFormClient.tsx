@@ -77,116 +77,97 @@ export default function ContactFormClient({ config, blockId, formTitle, introTex
         <div role="alert" className="alert alert-danger" style={{ marginBottom: '1rem' }}>{errors._form}</div>
       )}
 
-      <form onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-        <div>
-          <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
-            Name <span aria-hidden>*</span>
-          </label>
+      <form onSubmit={submit} noValidate>
+        <div className="field">
+          <label>Name <span aria-hidden>*</span></label>
           <input
             type="text"
-            className="input"
             value={fields.name}
             onChange={(e) => set('name', e.target.value)}
             autoComplete="name"
             required
           />
-          {errors.name && <p role="alert" style={{ color: 'var(--color-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.name}</p>}
+          {errors.name && <p role="alert" className="field-error">{errors.name}</p>}
         </div>
 
-        <div>
-          <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
-            Email <span aria-hidden>*</span>
-          </label>
+        <div className="field">
+          <label>Email <span aria-hidden>*</span></label>
           <input
             type="email"
-            className="input"
             value={fields.email}
             onChange={(e) => set('email', e.target.value)}
             autoComplete="email"
             required
           />
-          {errors.email && <p role="alert" style={{ color: 'var(--color-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.email}</p>}
+          {errors.email && <p role="alert" className="field-error">{errors.email}</p>}
         </div>
 
         {config.showPhone && (
-          <div>
-            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
-              Phone {config.requirePhone && <span aria-hidden>*</span>}
-            </label>
+          <div className="field">
+            <label>Phone {config.requirePhone && <span aria-hidden>*</span>}</label>
             <input
               type="tel"
-              className="input"
               value={fields.phone}
               onChange={(e) => set('phone', e.target.value)}
               autoComplete="tel"
               required={config.requirePhone}
             />
-            {errors.phone && <p role="alert" style={{ color: 'var(--color-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.phone}</p>}
+            {errors.phone && <p role="alert" className="field-error">{errors.phone}</p>}
           </div>
         )}
 
         {config.showCompany && (
-          <div>
-            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
-              Company {config.requireCompany && <span aria-hidden>*</span>}
-            </label>
+          <div className="field">
+            <label>Company {config.requireCompany && <span aria-hidden>*</span>}</label>
             <input
               type="text"
-              className="input"
               value={fields.company}
               onChange={(e) => set('company', e.target.value)}
               autoComplete="organization"
               required={config.requireCompany}
             />
-            {errors.company && <p role="alert" style={{ color: 'var(--color-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.company}</p>}
+            {errors.company && <p role="alert" className="field-error">{errors.company}</p>}
           </div>
         )}
 
         {config.showSubject && (
-          <div>
-            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
-              Subject {config.requireSubject && <span aria-hidden>*</span>}
-            </label>
+          <div className="field">
+            <label>Subject {config.requireSubject && <span aria-hidden>*</span>}</label>
             <input
               type="text"
-              className="input"
               value={fields.subject}
               onChange={(e) => set('subject', e.target.value)}
               required={config.requireSubject}
             />
-            {errors.subject && <p role="alert" style={{ color: 'var(--color-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.subject}</p>}
+            {errors.subject && <p role="alert" className="field-error">{errors.subject}</p>}
           </div>
         )}
 
-        <div>
-          <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
-            Message <span aria-hidden>*</span>
-          </label>
+        <div className="field">
+          <label>Message <span aria-hidden>*</span></label>
           <textarea
-            className="input"
             rows={5}
             value={fields.message}
             onChange={(e) => set('message', e.target.value)}
             required
           />
-          {errors.message && <p role="alert" style={{ color: 'var(--color-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.message}</p>}
+          {errors.message && <p role="alert" className="field-error">{errors.message}</p>}
         </div>
 
         {config.gdprConsentEnabled && (
-          <div>
+          <div className="field">
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={fields.gdprConsent}
                 onChange={(e) => set('gdprConsent', e.target.checked)}
                 required
-                style={{ marginTop: '0.2rem', flexShrink: 0 }}
               />
-              <span style={{ fontSize: '0.9375rem' }}>
+              <span>
                 {config.gdprConsentLabel ?? 'I agree to the processing of my personal data.'}
               </span>
             </label>
-            {errors.gdprConsent && <p role="alert" style={{ color: 'var(--color-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{errors.gdprConsent}</p>}
+            {errors.gdprConsent && <p role="alert" className="field-error">{errors.gdprConsent}</p>}
           </div>
         )}
 

@@ -9,33 +9,62 @@ import { prisma } from '@/lib/db/prisma'
 import { blockPropsToConfig, type ContactFormBlockProps } from '@/modules/contact-form/components/puck/ContactFormBlock'
 import type { ContactFormConfig } from '@/modules/contact-form/lib/types'
 
-// Searches Puck builder data for a block by type and id.
-function findPuckBlock(data: unknown, type: string, id: string): Record<string, unknown> | null {
-  if (!data || typeof data !== 'object') return null
-  const d = data as { content?: unknown[]; zones?: Record<string, unknown[]> }
-  const items: unknown[] = [
-    ...(Array.isArray(d.content) ? d.content : []),
-    ...Object.values(d.zones ?? {}).flat(),
-  ]
-  for (const item of items) {
-    if (item && typeof item === 'object') {
-      const block = item as { type?: string; id?: string; props?: Record<string, unknown> }
-      if (block.type === type && block.id === id) return block.props ?? {}
+// Recursively searches a list of blocks by type and id, descending into slot arrays in props.
+function searchBlocks(blocks: unknown[], type: string, id: string): Record<string, unknown> | null {
+  for (const item of blocks) {
+    if (!item || typeof item !== 'object') continue
+    const block = item as { type?: string; id?: string; props?: Record<string, unknown> }
+    if (block.type === type && block.id === id) return block.props ?? {}
+    if (block.props) {
+      for (const value of Object.values(block.props)) {
+        if (Array.isArray(value)) {
+          const found = searchBlocks(value, type, id)
+          if (found) return found
+        }
+      }
     }
   }
   return null
+}
+
+// Searches Puck builder data for a block by type and id, including nested slots.
+function findPuckBlock(data: unknown, type: string, id: string): Record<string, unknown> | null {
+  if (!data || typeof data !== 'object') return null
+  const d = data as { content?: unknown[]; zones?: Record<string, unknown[]> }
+  const roots: unknown[] = [
+    ...(Array.isArray(d.content) ? d.content : []),
+    ...Object.values(d.zones ?? {}).flat(),
+  ]
+  return searchBlocks(roots, type, id)
 }
 
 async function resolveConfig(
   path: string,
   blockId: string
 ): Promise<{ config: ContactFormConfig; sourceType: 'page' | 'layout'; sourceId: string; sourceLabel: string } | null> {
-  // Try InfoPage first: strip leading slash to get slug
-  const slug = path.replace(/^\//, '') || 'home'
-  const page = await prisma.infoPage.findFirst({
-    where: { OR: [{ slug }, { slug: path }] },
-    select: { id: true, title: true, builderData: true },
-  })
+  // For the root path, resolve the configured homepage by ID rather than by slug.
+  let page: { id: string; title: string | null; builderData: unknown } | null = null
+
+  if (path === '/' || path === '') {
+    const cfg = await prisma.siteConfig.findUnique({
+      where: { id: 'singleton' },
+      select: { homepageId: true },
+    })
+    if (cfg?.homepageId) {
+      page = await prisma.infoPage.findUnique({
+        where: { id: cfg.homepageId },
+        select: { id: true, title: true, builderData: true },
+      })
+    }
+  }
+
+  if (!page) {
+    const slug = path.replace(/^\//, '') || 'home'
+    page = await prisma.infoPage.findFirst({
+      where: { OR: [{ slug }, { slug: path }] },
+      select: { id: true, title: true, builderData: true },
+    })
+  }
 
   if (page?.builderData) {
     let data: unknown
@@ -44,6 +73,7 @@ async function resolveConfig(
     } catch { /* fall through */ }
     const props = data ? findPuckBlock(data, 'ContactForm', blockId) : null
     if (props) {
+      const slug = path.replace(/^\//, '') || 'home'
       return {
         config: blockPropsToConfig(props as ContactFormBlockProps),
         sourceType: 'page',
