@@ -1,6 +1,48 @@
 import ContactFormClient from './ContactFormClient'
 import type { ContactFormConfig } from '@/modules/contact-form/lib/types'
 
+// Cached fetch so resolveFields doesn't refetch on every panel keystroke
+let _authConfigCache: { data: { emailConfigured: boolean; turnstileConfigured: boolean }; expires: number } | null = null
+async function fetchAuthConfig(): Promise<{ emailConfigured: boolean; turnstileConfigured: boolean }> {
+  const now = Date.now()
+  if (_authConfigCache && now < _authConfigCache.expires) return _authConfigCache.data
+  const res = await fetch('/api/auth/config')
+  const data = await res.json() as { emailConfigured: boolean; turnstileConfigured: boolean }
+  _authConfigCache = { data, expires: now + 60_000 }
+  return data
+}
+
+function EmailNotConfiguredNotice() {
+  return (
+    <div style={{ padding: '0.75rem 1rem', background: '#fef3cd', border: '1px solid #ffc107', borderRadius: 6 }}>
+      <strong style={{ fontSize: '0.8125rem', color: '#856404', display: 'block', marginBottom: '0.25rem' }}>Email not configured</strong>
+      <span style={{ fontSize: '0.8125rem', color: '#856404' }}>
+        Email delivery (Brevo or SMTP) is not set up - configure it in Settings &rarr; Integrations before using this form.
+      </span>
+    </div>
+  )
+}
+
+function TurnstileUnavailableField() {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+        Cloudflare Turnstile
+      </label>
+      <select
+        disabled
+        defaultValue="no"
+        style={{ width: '100%', padding: '0.375rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.8125rem', fontFamily: 'inherit', background: '#f9fafb', color: '#6b7280' }}
+      >
+        <option value="no">Disabled</option>
+      </select>
+      <p style={{ fontSize: '0.75rem', color: '#9ca3af', margin: '0.25rem 0 0' }}>
+        Turnstile is not configured - add your site key in Settings &rarr; Integrations.
+      </p>
+    </div>
+  )
+}
+
 export type ContactFormBlockProps = {
   // Layout
   formTitle?: string
@@ -194,6 +236,17 @@ export const contactFormPuckComponent = {
     gdprConsentLabel:     '',
     retentionDays:        0,
     successMessage:       '',
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async resolveFields(_data: ContactFormBlockProps, { fields }: { fields: any }) {
+    const config = await fetchAuthConfig()
+    if (!config.emailConfigured) {
+      return { _setupNotice: { type: 'custom' as const, render: EmailNotConfiguredNotice } }
+    }
+    if (!config.turnstileConfigured) {
+      return { ...fields, turnstileEnabled: { type: 'custom' as const, render: TurnstileUnavailableField } }
+    }
+    return fields
   },
   render: ContactFormBlock,
 }
