@@ -246,7 +246,6 @@ export const contactFormPuckComponent = {
     retentionDays:        0,
     successMessage:       '',
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async resolveFields(_data: ContactFormBlockProps, { fields }: { fields: any }) {
     const config = await fetchAuthConfig()
     if (!config.emailConfigured) {
