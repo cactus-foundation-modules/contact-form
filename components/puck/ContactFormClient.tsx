@@ -48,6 +48,7 @@ export default function ContactFormClient({ config, formTitle, introText, submit
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (!config) return
     setSubmitting(true)
     setErrors({})
 
