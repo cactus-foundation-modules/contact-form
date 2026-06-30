@@ -4,6 +4,7 @@ import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { errorResponse } from '@/lib/utils'
 import { getSubmission, updateSubmission, deleteSubmission } from '@/modules/contact-form/lib/db'
+import { syncMessagesNotification } from '@/modules/contact-form/lib/notify'
 
 const Patch = z.object({
   status: z.enum(['unread', 'read', 'archived']).optional(),
@@ -25,6 +26,10 @@ export async function GET(
   if (submission.status === 'unread') {
     await updateSubmission(id, { status: 'read' })
     submission.status = 'read'
+    // Opening an unread message lowers the count - keep the notification honest.
+    syncMessagesNotification().catch((err) =>
+      console.error('[contact-form] Failed to sync messages notification:', err)
+    )
   }
 
   return NextResponse.json(submission)
@@ -43,6 +48,9 @@ export async function PATCH(
   if (!parsed.success) return errorResponse(parsed.error.issues[0]?.message ?? 'Invalid input')
 
   await updateSubmission(id, parsed.data)
+  syncMessagesNotification().catch((err) =>
+    console.error('[contact-form] Failed to sync messages notification:', err)
+  )
   return NextResponse.json({ success: true })
 }
 
@@ -56,5 +64,8 @@ export async function DELETE(
 
   const { id } = await params
   await deleteSubmission(id)
+  syncMessagesNotification().catch((err) =>
+    console.error('[contact-form] Failed to sync messages notification:', err)
+  )
   return NextResponse.json({ success: true })
 }

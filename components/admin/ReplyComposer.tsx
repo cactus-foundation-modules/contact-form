@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminPath } from '@/components/admin/AdminPathContext'
-import { markdownToHtml } from '@/lib/markdown-client'
+import { markdownToHtml } from '@/modules/contact-form/lib/markdown-client'
 
 type Props = {
   submissionId: string

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { markdownToHtml } from '@/lib/markdown-client'
+import { markdownToHtml } from '@/modules/contact-form/lib/markdown-client'
 
 export default function MySignaturePage() {
   const [signature, setSignature] = useState<string>('')

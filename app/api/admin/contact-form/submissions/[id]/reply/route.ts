@@ -5,6 +5,7 @@ import { hasPermission } from '@/lib/permissions/check'
 import { errorResponse } from '@/lib/utils'
 import { prisma } from '@/lib/db/prisma'
 import { getSubmission, createReply, getUserProfile, updateSubmission } from '@/modules/contact-form/lib/db'
+import { syncMessagesNotification } from '@/modules/contact-form/lib/notify'
 import { sendReply } from '@/modules/contact-form/lib/email'
 
 const Body = z.object({
@@ -40,6 +41,10 @@ export async function POST(
 
   // Mark submission as read
   await updateSubmission(id, { status: 'read' })
+  // Replying clears the unread flag - keep the rolling notification honest.
+  syncMessagesNotification().catch((err) =>
+    console.error('[contact-form] Failed to sync messages notification:', err)
+  )
 
   // Send the reply email
   const siteConfig = await prisma.siteConfig.findUnique({

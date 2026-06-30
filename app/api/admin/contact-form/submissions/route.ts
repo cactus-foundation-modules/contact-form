@@ -4,6 +4,7 @@ import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { errorResponse } from '@/lib/utils'
 import { getSubmissions, updateSubmission, deleteSubmission } from '@/modules/contact-form/lib/db'
+import { syncMessagesNotification } from '@/modules/contact-form/lib/notify'
 
 const BulkPatch = z.object({
   ids:    z.array(z.string()).min(1),
@@ -43,6 +44,11 @@ export async function PATCH(request: NextRequest) {
   } else {
     return errorResponse('Specify status or delete:true')
   }
+
+  // Bulk status/delete changes the unread count - keep the rolling notification honest.
+  syncMessagesNotification().catch((err) =>
+    console.error('[contact-form] Failed to sync messages notification:', err)
+  )
 
   return NextResponse.json({ success: true })
 }

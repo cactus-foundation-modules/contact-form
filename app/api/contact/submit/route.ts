@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSubmission, getSubmission } from '@/modules/contact-form/lib/db'
+import { syncMessagesNotification } from '@/modules/contact-form/lib/notify'
 import { validateSubmission, sanitiseField } from '@/modules/contact-form/lib/validate'
 import { sendSubmissionNotification, sendAutoReply } from '@/modules/contact-form/lib/email'
 import { checkContactRateLimit } from '@/modules/contact-form/lib/rate-limit'
@@ -203,6 +204,11 @@ export async function POST(request: NextRequest) {
     sourceBlockId: blockId,
     sourceLabel,
   })
+
+  // Keep the rolling "N unread messages" admin notification in step with the inbox.
+  syncMessagesNotification().catch((err) =>
+    console.error('[contact-form] Failed to sync messages notification:', err)
+  )
 
   // Step 7: Fetch site config for email fallback
   const siteConfig = await prisma.siteConfig.findUnique({

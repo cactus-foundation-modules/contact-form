@@ -100,6 +100,13 @@ export async function getSubmissions(opts: {
   }
 }
 
+export async function countUnreadSubmissions(): Promise<number> {
+  const rows = await prisma.$queryRaw<[{ count: bigint }]>`
+    SELECT COUNT(*) FROM "cf_contact_submissions" WHERE "status" = 'unread'
+  `
+  return Number(rows[0].count)
+}
+
 export async function getSubmission(id: string): Promise<SubmissionWithReplies | null> {
   const [submissionRows, replyRows] = await Promise.all([
     prisma.$queryRaw<Record<string, unknown>[]>`
