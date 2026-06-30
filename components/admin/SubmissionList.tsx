@@ -79,13 +79,14 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
     <div>
       <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
         {TABS.map((tab) => (
-          <Link
+          <button
             key={tab.value}
-            href={`${base}/m/contact-form/inbox?status=${tab.value}`}
+            type="button"
+            onClick={() => router.push(`${base}/m/contact-form/inbox?status=${tab.value}`)}
             className={`btn btn-sm ${status === tab.value ? 'btn-primary' : 'btn-secondary'}`}
           >
             {tab.label}
-          </Link>
+          </button>
         ))}
         <span style={{ marginLeft: 'auto', color: 'var(--color-text-muted)', fontSize: '0.875rem', lineHeight: '2rem' }}>
           {total} total

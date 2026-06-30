@@ -2,6 +2,7 @@ import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { getSubmissions } from '@/modules/contact-form/lib/db'
 import SubmissionList from '@/modules/contact-form/components/admin/SubmissionList'
+import { headers } from 'next/headers'
 
 export const metadata = { title: 'Contact Inbox — Admin' }
 
@@ -24,12 +25,23 @@ export default async function ContactInboxPage({ searchParams }: Props) {
 
   const canDelete  = await hasPermission(user, 'contact.delete')
   const canExport  = await hasPermission(user, 'contact.export')
+  const canReply   = await hasPermission(user, 'contact.reply')
+
+  const adminPath = (await headers()).get('x-cactus-admin-path') ?? ''
 
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">Contact Inbox</h1>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {canReply && (
+            <a
+              href={`/${adminPath}/m/contact-form/my-signature`}
+              className="btn btn-secondary btn-sm"
+            >
+              Edit My Signature
+            </a>
+          )}
           {canExport && (
             <a
               href={`/api/m/contact-form/admin/export${status !== 'all' ? `?status=${status}` : ''}`}
