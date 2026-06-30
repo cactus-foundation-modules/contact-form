@@ -2,7 +2,6 @@ import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { getSubmissions } from '@/modules/contact-form/lib/db'
 import SubmissionList from '@/modules/contact-form/components/admin/SubmissionList'
-import Link from 'next/link'
 
 export const metadata = { title: 'Contact Inbox — Admin' }
 
@@ -39,9 +38,6 @@ export default async function ContactInboxPage({ searchParams }: Props) {
               Export CSV
             </a>
           )}
-          <Link href="/cactus-admin/m/contact-form/config" className="btn btn-secondary btn-sm">
-            Settings
-          </Link>
         </div>
       </div>
 

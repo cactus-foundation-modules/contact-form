@@ -1,87 +1,11 @@
 import { prisma } from '@/lib/db/prisma'
 import type {
-  ContactFormConfig,
   ContactSubmission,
   ContactSubmissionReply,
   ContactUserProfile,
   SubmissionWithReplies,
   PaginatedSubmissions,
 } from './types'
-
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-export async function getContactFormConfig(): Promise<ContactFormConfig | null> {
-  const rows = await prisma.$queryRaw<Array<{
-    id: string; created_at: Date; updated_at: Date;
-    show_phone: boolean; show_company: boolean; show_subject: boolean;
-    require_phone: boolean; require_company: boolean; require_subject: boolean;
-    name_validation_mode: string; notification_email: string | null;
-    cc_emails: string[]; auto_reply_enabled: boolean; auto_reply_body: string | null;
-    turnstile_enabled: boolean; rate_limit_enabled: boolean;
-    rate_limit_max_attempts: number; rate_limit_window_min: number;
-    gdpr_consent_enabled: boolean; gdpr_consent_label: string | null;
-    retention_days: number; success_message: string;
-  }>>`SELECT * FROM "cf_contact_form_config" LIMIT 1`
-
-  const r = rows[0]
-  if (!r) return null
-  return {
-    id: r.id,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-    showPhone: r.show_phone,
-    showCompany: r.show_company,
-    showSubject: r.show_subject,
-    requirePhone: r.require_phone,
-    requireCompany: r.require_company,
-    requireSubject: r.require_subject,
-    nameValidationMode: r.name_validation_mode as 'first_only' | 'both',
-    notificationEmail: r.notification_email,
-    ccEmails: r.cc_emails ?? [],
-    autoReplyEnabled: r.auto_reply_enabled,
-    autoReplyBody: r.auto_reply_body,
-    turnstileEnabled: r.turnstile_enabled,
-    rateLimitEnabled: r.rate_limit_enabled,
-    rateLimitMaxAttempts: r.rate_limit_max_attempts,
-    rateLimitWindowMin: r.rate_limit_window_min,
-    gdprConsentEnabled: r.gdpr_consent_enabled,
-    gdprConsentLabel: r.gdpr_consent_label,
-    retentionDays: r.retention_days,
-    successMessage: r.success_message,
-  }
-}
-
-export async function saveContactFormConfig(data: Omit<ContactFormConfig, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
-  const existing = await getContactFormConfig()
-  if (!existing) {
-    await prisma.$executeRaw`INSERT INTO "cf_contact_form_config" ("id") VALUES (gen_random_uuid()::text)`
-  }
-  await prisma.$executeRaw`
-    UPDATE "cf_contact_form_config" SET
-      "show_phone"              = ${data.showPhone}::boolean,
-      "show_company"            = ${data.showCompany}::boolean,
-      "show_subject"            = ${data.showSubject}::boolean,
-      "require_phone"           = ${data.requirePhone}::boolean,
-      "require_company"         = ${data.requireCompany}::boolean,
-      "require_subject"         = ${data.requireSubject}::boolean,
-      "name_validation_mode"    = ${data.nameValidationMode},
-      "notification_email"      = ${data.notificationEmail},
-      "cc_emails"               = ${data.ccEmails}::text[],
-      "auto_reply_enabled"      = ${data.autoReplyEnabled}::boolean,
-      "auto_reply_body"         = ${data.autoReplyBody},
-      "turnstile_enabled"       = ${data.turnstileEnabled}::boolean,
-      "rate_limit_enabled"      = ${data.rateLimitEnabled}::boolean,
-      "rate_limit_max_attempts" = ${data.rateLimitMaxAttempts}::integer,
-      "rate_limit_window_min"   = ${data.rateLimitWindowMin}::integer,
-      "gdpr_consent_enabled"    = ${data.gdprConsentEnabled}::boolean,
-      "gdpr_consent_label"      = ${data.gdprConsentLabel},
-      "retention_days"          = ${data.retentionDays}::integer,
-      "success_message"         = ${data.successMessage},
-      "updated_at"              = CURRENT_TIMESTAMP
-  `
-}
 
 // ---------------------------------------------------------------------------
 // Submissions
@@ -97,17 +21,24 @@ type CreateSubmissionData = {
   ipAddress?: string | null
   userAgent?: string | null
   gdprConsent: boolean
+  sourceType?: 'page' | 'layout' | null
+  sourceId?: string | null
+  sourceBlockId?: string | null
+  sourceLabel?: string | null
 }
 
 export async function createSubmission(data: CreateSubmissionData): Promise<string> {
   const rows = await prisma.$queryRaw<[{ id: string }]>`
     INSERT INTO "cf_contact_submissions"
       ("id", "name", "email", "phone", "company", "subject", "message",
-       "ip_address", "user_agent", "gdpr_consent", "status")
+       "ip_address", "user_agent", "gdpr_consent", "status",
+       "source_type", "source_id", "source_block_id", "source_label")
     VALUES
       (gen_random_uuid()::text, ${data.name}, ${data.email}, ${data.phone ?? null},
        ${data.company ?? null}, ${data.subject ?? null}, ${data.message},
-       ${data.ipAddress ?? null}, ${data.userAgent ?? null}, ${data.gdprConsent}::boolean, 'unread')
+       ${data.ipAddress ?? null}, ${data.userAgent ?? null}, ${data.gdprConsent}::boolean, 'unread',
+       ${data.sourceType ?? null}, ${data.sourceId ?? null},
+       ${data.sourceBlockId ?? null}, ${data.sourceLabel ?? null})
     RETURNING "id"
   `
   return rows[0].id
@@ -128,6 +59,10 @@ function mapRow(r: Record<string, unknown>): ContactSubmission {
     userAgent: (r.user_agent as string | null) ?? null,
     gdprConsent: r.gdpr_consent as boolean,
     status: r.status as ContactSubmission['status'],
+    sourceType: (r.source_type as 'page' | 'layout' | null) ?? null,
+    sourceId: (r.source_id as string | null) ?? null,
+    sourceBlockId: (r.source_block_id as string | null) ?? null,
+    sourceLabel: (r.source_label as string | null) ?? null,
   }
 }
 
@@ -275,21 +210,22 @@ export async function upsertUserProfile(userId: string, signature: string | null
 }
 
 // ---------------------------------------------------------------------------
-// Retention pruning
+// Retention pruning (per block, based on each form's own retentionDays setting)
 // ---------------------------------------------------------------------------
 
-export async function pruneExpiredSubmissions(retentionDays: number): Promise<number> {
+export async function pruneExpiredSubmissionsByBlock(blockId: string, retentionDays: number): Promise<number> {
   if (retentionDays <= 0) return 0
   const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000)
   const result = await prisma.$queryRaw<[{ count: bigint }]>`
     WITH deleted AS (
       DELETE FROM "cf_contact_submissions"
-      WHERE "created_at" < ${cutoff}
+      WHERE "source_block_id" = ${blockId}
+      AND "created_at" < ${cutoff}
       RETURNING id
     )
     SELECT COUNT(*) FROM deleted
   `
   const count = Number(result[0].count)
-  if (count > 0) console.log(`[contact-form] Pruned ${count} expired submission(s)`)
+  if (count > 0) console.log(`[contact-form] Pruned ${count} expired submission(s) for block ${blockId}`)
   return count
 }

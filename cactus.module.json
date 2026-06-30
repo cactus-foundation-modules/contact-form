@@ -1,20 +1,26 @@
 {
   "name": "contact-form",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "tablePrefix": "cf_",
-  "description": "A configurable contact form with admin inbox, reply composer, and notification emails.",
+  "description": "A contact form that can be placed on any page via the Puck page builder, with per-form settings and an admin inbox.",
   "permissions": [
     "contact.view",
     "contact.reply",
     "contact.delete",
-    "contact.export",
-    "contact.configure"
+    "contact.export"
   ],
   "navEntries": [
-    { "label": "Inbox", "path": "/m/contact-form/inbox", "icon": "✉️", "permission": "contact.view" },
-    { "label": "Contact Settings", "path": "/m/contact-form/config", "icon": "⚙️", "permission": "contact.configure" }
+    { "label": "Inbox", "path": "/m/contact-form/inbox", "icon": "✉️", "permission": "contact.view" }
   ],
   "requiredEnvVars": [],
   "cookieCategories": [],
-  "teardown": ["ContactFormConfig", "ContactSubmission", "ContactSubmissionReply"]
+  "teardown": ["ContactSubmission", "ContactSubmissionReply"],
+  "puckBlocks": [
+    {
+      "type": "ContactForm",
+      "import": "./components/puck/ContactFormBlock",
+      "component": "contactFormPuckComponent",
+      "rscComponent": "contactFormPuckRscComponent"
+    }
+  ]
 }

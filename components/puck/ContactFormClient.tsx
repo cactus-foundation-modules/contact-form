@@ -4,11 +4,11 @@ import { useState } from 'react'
 import type { ContactFormConfig } from '@/modules/contact-form/lib/types'
 
 type Props = {
-  config: ContactFormConfig | null
+  config: ContactFormConfig
+  blockId: string
   formTitle?: string
   introText?: string
   submitLabel?: string
-  successMessage?: string
   padding?: string
 }
 
@@ -16,24 +16,18 @@ const PADDING_MAP: Record<string, string> = {
   none: '0', sm: '0.5rem', md: '1rem', lg: '2rem', xl: '4rem',
 }
 
-export default function ContactFormClient({ config, formTitle, introText, submitLabel, successMessage, padding }: Props) {
-  const [fields, setFields] = useState({ name: '', email: '', phone: '', company: '', subject: '', message: '', gdprConsent: false })
+export default function ContactFormClient({ config, blockId, formTitle, introText, submitLabel, padding }: Props) {
+  const [fields, setFields] = useState({
+    name: '', email: '', phone: '', company: '', subject: '', message: '', gdprConsent: false,
+  })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const style = { padding: PADDING_MAP[padding ?? 'none'] ?? '0' }
 
-  if (!config) {
-    return (
-      <div style={style}>
-        <p style={{ color: 'var(--color-text-muted)' }}>Contact form unavailable.</p>
-      </div>
-    )
-  }
-
   if (submitted) {
-    const msg = successMessage || config.successMessage || 'Thank you for getting in touch!'
+    const msg = config.successMessage || 'Thank you for getting in touch!'
     return (
       <div style={style}>
         <div role="alert" className="alert alert-success">{msg}</div>
@@ -53,6 +47,8 @@ export default function ContactFormClient({ config, formTitle, introText, submit
     setErrors({})
 
     const fd = new FormData()
+    fd.append('path',    window.location.pathname)
+    fd.append('blockId', blockId)
     fd.append('name',    fields.name)
     fd.append('email',   fields.email)
     if (config.showPhone)   fd.append('phone',   fields.phone)
@@ -61,7 +57,7 @@ export default function ContactFormClient({ config, formTitle, introText, submit
     fd.append('message', fields.message)
     if (config.gdprConsentEnabled) fd.append('gdprConsent', fields.gdprConsent ? 'true' : 'false')
 
-    const res = await fetch('/api/m/contact-form/submit', { method: 'POST', body: fd })
+    const res = await fetch('/api/m/contact-form/contact/submit', { method: 'POST', body: fd })
     const data = await res.json().catch(() => ({})) as { success?: boolean; errors?: Record<string, string> }
 
     if (res.ok && data.success) {
@@ -195,11 +191,7 @@ export default function ContactFormClient({ config, formTitle, introText, submit
         )}
 
         <div>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={submitting}
-          >
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
             {submitting ? 'Sending...' : (submitLabel || 'Send Message')}
           </button>
         </div>

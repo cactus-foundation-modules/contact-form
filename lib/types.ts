@@ -1,7 +1,4 @@
 export type ContactFormConfig = {
-  id: string
-  createdAt: Date
-  updatedAt: Date
   showPhone: boolean
   showCompany: boolean
   showSubject: boolean
@@ -37,6 +34,10 @@ export type ContactSubmission = {
   userAgent: string | null
   gdprConsent: boolean
   status: 'unread' | 'read' | 'archived'
+  sourceType: 'page' | 'layout' | null
+  sourceId: string | null
+  sourceBlockId: string | null
+  sourceLabel: string | null
 }
 
 export type ContactSubmissionReply = {
