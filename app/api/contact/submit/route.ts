@@ -99,9 +99,9 @@ export async function POST(request: NextRequest) {
   // Step 7: Fetch site config for email fallback
   const siteConfig = await prisma.siteConfig.findUnique({
     where: { id: 'singleton' },
-    select: { adminEmail: true, emailFromAddress: true },
+    select: { emailFromAddress: true },
   })
-  const siteAdminEmail = siteConfig?.adminEmail ?? siteConfig?.emailFromAddress ?? ''
+  const siteAdminEmail = siteConfig?.emailFromAddress ?? ''
 
   const submission = await getSubmission(submissionId)
   if (submission) {
