@@ -111,7 +111,16 @@ const PADDING_MAP: Record<string, string> = {
 export async function ContactFormBlockRsc(props: ContactFormBlockProps & { puck?: { id?: string } }) {
   const config = blockPropsToConfig(props)
   const blockId = props.puck?.id ?? ''
-  return <ContactFormClient config={config} blockId={blockId} {...props} />
+  return (
+    <ContactFormClient
+      config={config}
+      blockId={blockId}
+      formTitle={props.formTitle}
+      introText={props.introText}
+      submitLabel={props.submitLabel}
+      padding={props.padding}
+    />
+  )
 }
 
 // Editor preview version: synchronous, no async work.

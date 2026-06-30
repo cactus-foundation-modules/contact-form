@@ -1,6 +1,6 @@
 {
   "name": "contact-form",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "tablePrefix": "cf_",
   "description": "A contact form that can be placed on any page via the Puck page builder, with per-form settings and an admin inbox.",
   "permissions": [
