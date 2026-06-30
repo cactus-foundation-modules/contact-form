@@ -3,6 +3,7 @@ import { hasPermission } from '@/lib/permissions/check'
 import { getSubmission, updateSubmission } from '@/modules/contact-form/lib/db'
 import { markdownToHtml } from '@/lib/sanitize'
 import ReplyComposer from '@/modules/contact-form/components/admin/ReplyComposer'
+import DeleteSubmissionButton from '@/modules/contact-form/components/admin/DeleteSubmissionButton'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -43,20 +44,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
             {submission.subject ?? `Message from ${submission.name}`}
           </h1>
         </div>
-        {canDelete && (
-          <form method="POST" action={`/api/m/contact-form/admin/submissions/${id}`}>
-            <input type="hidden" name="_method" value="DELETE" />
-            <button
-              type="submit"
-              className="btn btn-danger btn-sm"
-              onClick={(e) => {
-                if (!confirm('Delete this submission and all its replies?')) e.preventDefault()
-              }}
-            >
-              Delete
-            </button>
-          </form>
-        )}
+        {canDelete && <DeleteSubmissionButton submissionId={id} />}
       </div>
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>

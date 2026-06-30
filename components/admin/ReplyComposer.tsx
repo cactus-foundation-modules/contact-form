@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminPath } from '@/components/admin/AdminPathContext'
-import { markdownToHtml } from '@/modules/contact-form/lib/markdown-client'
+import MarkdownEditor from '@/modules/contact-form/components/admin/MarkdownEditor'
 
 type Props = {
   submissionId: string
@@ -16,7 +16,6 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
   const adminPath = useAdminPath()
   const [body, setBody] = useState('')
   const [signature, setSignature] = useState<string | null>(null)
-  const [preview, setPreview] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -58,43 +57,16 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
 
       {error && <div className="alert alert-danger" style={{ marginBottom: '0.75rem' }}>{error}</div>}
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-        <button
-          type="button"
-          className={`btn btn-sm ${!preview ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setPreview(false)}
-        >
-          Write
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm ${preview ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setPreview(true)}
-        >
-          Preview
-        </button>
-      </div>
-
       <form onSubmit={send}>
-        {preview ? (
-          <div
-            className="prose"
-            style={{ minHeight: '8rem', padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.375rem', marginBottom: '0.75rem' }}
-            dangerouslySetInnerHTML={{
-              __html: previewContent ? markdownToHtml(previewContent) : '<em style="color:var(--color-text-muted)">Nothing to preview.</em>',
-            }}
-          />
-        ) : (
-          <textarea
-            className="input"
-            rows={6}
+        <div style={{ marginBottom: '0.75rem' }}>
+          <MarkdownEditor
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={setBody}
+            rows={6}
             placeholder="Write your reply here... (markdown supported)"
-            style={{ marginBottom: '0.75rem' }}
-            required
+            previewContent={previewContent}
           />
-        )}
+        </div>
 
         {signature && (
           <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>

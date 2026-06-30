@@ -1,14 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { markdownToHtml } from '@/modules/contact-form/lib/markdown-client'
+import MarkdownEditor from '@/modules/contact-form/components/admin/MarkdownEditor'
 
 export default function MySignaturePage() {
   const [signature, setSignature] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [preview, setPreview] = useState(false)
 
   useEffect(() => {
     fetch('/api/m/contact-form/admin/signature')
@@ -50,38 +49,12 @@ export default function MySignaturePage() {
       {saved && <div className="alert alert-success" style={{ marginBottom: '1rem' }}>Signature saved.</div>}
 
       <div className="card">
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          <button
-            type="button"
-            className={`btn btn-sm ${!preview ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setPreview(false)}
-          >
-            Write
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${preview ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setPreview(true)}
-          >
-            Preview
-          </button>
-        </div>
-
-        {preview ? (
-          <div
-            className="prose"
-            style={{ minHeight: '8rem', padding: '0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.375rem' }}
-            dangerouslySetInnerHTML={{ __html: signature ? markdownToHtml(signature) : '<em style="color:var(--color-text-muted)">No signature set.</em>' }}
-          />
-        ) : (
-          <textarea
-            className="input"
-            rows={8}
-            value={signature}
-            onChange={(e) => setSignature(e.target.value)}
-            placeholder="Kind regards,&#10;Your Name&#10;&#10;Your Organisation"
-          />
-        )}
+        <MarkdownEditor
+          value={signature}
+          onChange={setSignature}
+          rows={8}
+          placeholder={'Kind regards,\nYour Name\n\nYour Organisation'}
+        />
       </div>
 
       <form onSubmit={save} style={{ marginTop: '1rem' }}>
