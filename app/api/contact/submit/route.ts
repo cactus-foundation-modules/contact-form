@@ -14,7 +14,7 @@ function searchBlocks(blocks: unknown[], type: string, id: string): Record<strin
   for (const item of blocks) {
     if (!item || typeof item !== 'object') continue
     const block = item as { type?: string; id?: string; props?: Record<string, unknown> }
-    if (block.type === type && block.id === id) return block.props ?? {}
+    if (block.type === type && block.props?.id === id) return block.props ?? {}
     if (block.props) {
       for (const value of Object.values(block.props)) {
         if (Array.isArray(value)) {
