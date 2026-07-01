@@ -124,17 +124,23 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: 0, alignItems: 'center', borderBottom: '1px solid var(--color-border)', marginBottom: '1rem', overflowX: 'auto' }}>
         {TABS.map((tab) => (
           <Link
             key={tab.value}
             href={`${base}/m/contact-form/inbox?status=${tab.value}`}
-            className={`btn btn-sm ${status === tab.value ? 'btn-primary' : 'btn-secondary'}`}
+            style={{
+              padding: '0.625rem 1rem', textDecoration: 'none',
+              borderBottom: status === tab.value ? '2px solid var(--color-primary)' : '2px solid transparent',
+              color: status === tab.value ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              fontWeight: status === tab.value ? 600 : 400,
+              fontSize: 'var(--text-base)', whiteSpace: 'nowrap',
+            }}
           >
             {tab.label}
           </Link>
         ))}
-        <span style={{ marginLeft: 'auto', color: 'var(--color-text-muted)', fontSize: '0.875rem', lineHeight: '2rem' }}>
+        <span style={{ marginLeft: 'auto', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
           {total} total
         </span>
       </div>
