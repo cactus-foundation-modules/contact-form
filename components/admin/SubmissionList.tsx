@@ -129,6 +129,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
           <Link
             key={tab.value}
             href={`${base}/m/contact-form/inbox?status=${tab.value}`}
+            prefetch={false}
             style={{
               padding: '0.625rem 1rem', textDecoration: 'none',
               borderBottom: status === tab.value ? '2px solid var(--color-primary)' : '2px solid transparent',
@@ -171,6 +172,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                     type="checkbox"
                     checked={selected.size === submissions.length && submissions.length > 0}
                     onChange={toggleAll}
+                    style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
                   />
                 </th>
                 <th>From</th>
@@ -192,6 +194,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                       type="checkbox"
                       checked={selected.has(s.id)}
                       onChange={() => toggleOne(s.id)}
+                      style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
                     />
                   </td>
                   <td>
