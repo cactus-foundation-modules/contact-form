@@ -132,14 +132,16 @@ export default function MarkdownEditor({ value, onChange, rows = 8, placeholder,
           }}
         />
       ) : (
-        <textarea
-          ref={ref}
-          className="input"
-          rows={rows}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
+        <div className="field" style={{ marginBottom: 0 }}>
+          <textarea
+            ref={ref}
+            rows={rows}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            style={{ minHeight }}
+          />
+        </div>
       )}
     </div>
   )
