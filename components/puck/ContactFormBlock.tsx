@@ -1,4 +1,4 @@
-import ContactFormClient from './ContactFormClient'
+import ContactFormClient, { getFormPadding } from './ContactFormClient'
 import type { ContactFormConfig } from '@/modules/contact-form/lib/types'
 
 // Cached fetch so resolveFields doesn't refetch on every panel keystroke
@@ -102,10 +102,6 @@ export function blockPropsToConfig(props: ContactFormBlockProps): ContactFormCon
   }
 }
 
-const PADDING_MAP: Record<string, string> = {
-  none: '0', sm: '0.5rem', md: '1rem', lg: '2rem', xl: '4rem',
-}
-
 // RSC version: async server component — derives config from block props and renders the real form.
 // Registered in puckRscConfig so page visitors see the actual form.
 export async function ContactFormBlockRsc(props: ContactFormBlockProps & { id?: string }) {
@@ -128,7 +124,7 @@ export async function ContactFormBlockRsc(props: ContactFormBlockProps & { id?: 
 export function ContactFormBlock(props: ContactFormBlockProps) {
   const { formTitle, introText, padding } = props
   return (
-    <div style={{ padding: PADDING_MAP[padding ?? 'none'] ?? '0' }}>
+    <div style={{ padding: getFormPadding(padding) }}>
       {formTitle && <h2 style={{ marginBottom: introText ? '0.5rem' : '1rem' }}>{formTitle}</h2>}
       {introText && <p style={{ marginBottom: '1rem', color: 'var(--color-text-muted)' }}>{introText}</p>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', opacity: 0.6, pointerEvents: 'none' }}>
@@ -150,8 +146,9 @@ export const contactFormPuckComponent = {
     submitLabel:    { type: 'text' as const,     label: 'Submit button label' },
     padding: {
       type: 'select' as const,
-      label: 'Padding',
+      label: 'Padding (left/right)',
       options: [
+        { value: 'default', label: 'Default (site spacing)' },
         { value: 'none', label: 'None' },
         { value: 'sm',   label: 'Small (0.5rem)' },
         { value: 'md',   label: 'Medium (1rem)' },
@@ -225,7 +222,7 @@ export const contactFormPuckComponent = {
     formTitle:            'Get in touch',
     introText:            '',
     submitLabel:          'Send Message',
-    padding:              'none',
+    padding:              'default',
     showPhone:            'yes',
     requirePhone:         'no',
     showCompany:          'no',

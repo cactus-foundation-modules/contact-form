@@ -15,6 +15,13 @@ type Props = {
 const PADDING_MAP: Record<string, string> = {
   none: '0', sm: '0.5rem', md: '1rem', lg: '2rem', xl: '4rem',
 }
+// Horizontal-only gutter matching the core builder blocks. 'default' (and unset)
+// pulls the site-wide gutter set in Styles → Spacing (--block-padding).
+export function getFormPadding(p?: string): string {
+  if (!p || p === 'default') return '0 var(--block-padding, 1.5rem)'
+  const v = PADDING_MAP[p]
+  return v && v !== '0' ? `0 ${v}` : '0'
+}
 
 // Public-facing field styling driven by the site's Styles → Form Fields tokens
 // (via the --field-* / --field-label-* variables buildTokenStyles emits), with
@@ -69,7 +76,7 @@ export default function ContactFormClient({ config, blockId, formTitle, introTex
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  const style = { padding: PADDING_MAP[padding ?? 'none'] ?? '0' }
+  const style = { padding: getFormPadding(padding) }
 
   if (submitted) {
     const msg = config.successMessage || 'Thank you for getting in touch!'
