@@ -59,8 +59,8 @@ export async function sendAutoReply(
   await sendEmail({
     to: submission.email,
     subject: 'Thanks for getting in touch',
-    html: markdownToHtml(body),
-    text: markdownToPlainText(body),
+    html: markdownToHtml(body, { breaks: true }),
+    text: markdownToPlainText(body, { breaks: true }),
   })
 }
 
@@ -73,7 +73,7 @@ export async function sendReply(opts: {
   const { submission, replyBody, signature } = opts
 
   const combined = signature
-    ? `${replyBody}\n\n---\n\n${signature}`
+    ? `${replyBody}\n\n${signature}`
     : replyBody
 
   const emailSubject = submission.subject ? `Re: ${submission.subject}` : 'Re: Your contact form message'
@@ -82,7 +82,7 @@ export async function sendReply(opts: {
     to: submission.email,
     replyTo: opts.fromEmail,
     subject: emailSubject,
-    html: markdownToHtml(combined),
-    text: markdownToPlainText(combined),
+    html: markdownToHtml(combined, { breaks: true }),
+    text: markdownToPlainText(combined, { breaks: true }),
   })
 }
