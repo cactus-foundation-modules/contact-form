@@ -6,6 +6,35 @@ import { useRouter } from 'next/navigation'
 import { useAdminPath } from '@/components/admin/AdminPathContext'
 import type { ContactSubmission } from '@/modules/contact-form/lib/types'
 
+// Matches ICON_PROPS in components/admin/AdminNav.tsx — same stroke family throughout the admin.
+const ICON_PROPS = {
+  width: 18,
+  height: 18,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': true,
+}
+
+const MailClosedIcon = (
+  <svg {...ICON_PROPS}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+)
+const MailOpenIcon = (
+  <svg {...ICON_PROPS}><path d="M3 8l9-5 9 5" /><path d="M3 8v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8" /><path d="m3 8 9 6 9-6" /></svg>
+)
+const ArchiveIcon = (
+  <svg {...ICON_PROPS}><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></svg>
+)
+const TrashIcon = (
+  <svg {...ICON_PROPS}><path d="M4 7h16" /><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" /><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
+)
+const ReplyIcon = (
+  <svg {...ICON_PROPS}><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 6 6v2" /></svg>
+)
+
 type Props = {
   submissions: ContactSubmission[]
   total: number
@@ -13,6 +42,7 @@ type Props = {
   totalPages: number
   status: string
   canDelete: boolean
+  canReply: boolean
 }
 
 const TABS = [
@@ -34,12 +64,13 @@ function relativeDate(date: Date): string {
   return new Date(date).toLocaleDateString('en-GB')
 }
 
-export default function SubmissionList({ submissions, total, page, totalPages, status, canDelete }: Props) {
+export default function SubmissionList({ submissions, total, page, totalPages, status, canDelete, canReply }: Props) {
   const router = useRouter()
   const adminPath = useAdminPath()
   const base = `/${adminPath}`
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
+  const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({})
 
   function toggleAll() {
     if (selected.size === submissions.length) {
@@ -72,6 +103,22 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
     })
     setSelected(new Set())
     setBusy(false)
+    router.refresh()
+  }
+
+  async function rowAction(id: string, action: 'read' | 'unread' | 'archived' | 'delete') {
+    if (action === 'delete' && !confirm('Delete this submission and all its replies?')) return
+    setRowBusy((prev) => ({ ...prev, [id]: true }))
+    if (action === 'delete') {
+      await fetch(`/api/m/contact-form/admin/submissions/${id}`, { method: 'DELETE' })
+    } else {
+      await fetch(`/api/m/contact-form/admin/submissions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: action }),
+      })
+    }
+    setRowBusy((prev) => ({ ...prev, [id]: false }))
     router.refresh()
   }
 
@@ -126,6 +173,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                 <th>Page</th>
                 <th>Status</th>
                 <th>Date</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -162,6 +210,57 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                   </td>
                   <td style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
                     {relativeDate(s.createdAt)}
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                      {canReply && (
+                        <Link
+                          href={`${base}/m/contact-form/inbox/${s.id}#reply-composer`}
+                          className="row-action-btn"
+                          aria-label="Reply"
+                        >
+                          {ReplyIcon}
+                          <span className="row-action-tip" aria-hidden="true">Reply</span>
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        className="row-action-btn"
+                        aria-label={s.status === 'unread' ? 'Mark as read' : 'Mark as unread'}
+                        disabled={rowBusy[s.id]}
+                        onClick={() => rowAction(s.id, s.status === 'unread' ? 'read' : 'unread')}
+                      >
+                        {s.status === 'unread' ? MailClosedIcon : MailOpenIcon}
+                        <span className="row-action-tip" aria-hidden="true">
+                          {s.status === 'unread' ? 'Mark as read' : 'Mark as unread'}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="row-action-btn"
+                        aria-label="Archive"
+                        disabled={rowBusy[s.id] || s.status === 'archived'}
+                        onClick={() => rowAction(s.id, 'archived')}
+                      >
+                        {ArchiveIcon}
+                        <span className="row-action-tip" aria-hidden="true">
+                          {s.status === 'archived' ? 'Already archived' : 'Archive'}
+                        </span>
+                      </button>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          className="row-action-btn"
+                          data-danger=""
+                          aria-label="Delete"
+                          disabled={rowBusy[s.id]}
+                          onClick={() => rowAction(s.id, 'delete')}
+                        >
+                          {TrashIcon}
+                          <span className="row-action-tip" aria-hidden="true">Delete</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

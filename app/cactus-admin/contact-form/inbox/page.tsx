@@ -60,6 +60,7 @@ export default async function ContactInboxPage({ searchParams }: Props) {
         totalPages={totalPages}
         status={status}
         canDelete={canDelete}
+        canReply={canReply}
       />
     </div>
   )

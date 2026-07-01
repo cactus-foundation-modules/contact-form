@@ -50,7 +50,7 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
   }
 
   return (
-    <div className="card">
+    <div className="card" id="reply-composer">
       <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>
         Reply to {submissionEmail}
       </h2>
