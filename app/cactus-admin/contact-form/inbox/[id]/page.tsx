@@ -88,7 +88,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
 
         <div
           className="prose"
-          dangerouslySetInnerHTML={{ __html: markdownToHtml(submission.message) }}
+          dangerouslySetInnerHTML={{ __html: markdownToHtml(submission.message, { breaks: true }) }}
         />
       </div>
 
@@ -113,7 +113,8 @@ export default async function SubmissionDetailPage({ params }: Props) {
                     __html: markdownToHtml(
                       reply.signatureSnapshot
                         ? `${reply.body}\n\n---\n\n${reply.signatureSnapshot}`
-                        : reply.body
+                        : reply.body,
+                      { breaks: true }
                     ),
                   }}
                 />
