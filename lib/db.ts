@@ -86,12 +86,13 @@ export async function getSubmissions(opts: {
         `
       : prisma.$queryRaw<Record<string, unknown>[]>`
           SELECT * FROM "cf_contact_submissions"
+          WHERE "status" != 'archived'
           ORDER BY "created_at" DESC
           LIMIT ${perPage} OFFSET ${offset}
         `,
     statusFilter
       ? prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) FROM "cf_contact_submissions" WHERE "status" = ${statusFilter}`
-      : prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) FROM "cf_contact_submissions"`,
+      : prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) FROM "cf_contact_submissions" WHERE "status" != 'archived'`,
   ])
 
   return {
