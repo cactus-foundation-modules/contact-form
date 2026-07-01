@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import MarkdownEditor from '@/modules/contact-form/components/admin/MarkdownEditor'
 
 export default function MySignaturePage() {
+  const router = useRouter()
   const [signature, setSignature] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     fetch('/api/m/contact-form/admin/signature')
@@ -21,15 +22,14 @@ export default function MySignaturePage() {
   async function save(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    setSaved(false)
     const res = await fetch('/api/m/contact-form/admin/signature', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ signature: signature || null }),
     })
     if (res.ok) {
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      router.back()
+      return
     }
     setSaving(false)
   }
@@ -45,8 +45,6 @@ export default function MySignaturePage() {
         Your signature is appended below a horizontal rule at the bottom of every reply you send.
         Markdown is supported.
       </p>
-
-      {saved && <div className="alert alert-success" style={{ marginBottom: '1rem' }}>Signature saved.</div>}
 
       <div className="card">
         <MarkdownEditor
