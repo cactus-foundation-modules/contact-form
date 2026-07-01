@@ -52,7 +52,7 @@ function getPurifier(): ReturnType<typeof createDOMPurify> {
 export function markdownToHtml(markdown: string): string {
   const stripped = markdown.replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-  const rawHtml = marked.parse(stripped, { async: false }) as string
+  const rawHtml = marked.parse(stripped, { async: false, breaks: true }) as string
 
   return getPurifier().sanitize(rawHtml, {
     ALLOWED_TAGS,

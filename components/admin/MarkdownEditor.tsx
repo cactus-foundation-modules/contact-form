@@ -19,19 +19,22 @@ type ToolAction =
   | { kind: 'line'; prefix: string }
   | { kind: 'link' }
 
-const TOOLS: { label: string; title: string; style?: React.CSSProperties; action: ToolAction }[] = [
-  { label: 'B', title: 'Bold', style: { fontWeight: 700 }, action: { kind: 'wrap', before: '**', after: '**', placeholder: 'bold text' } },
-  { label: 'I', title: 'Italic', style: { fontStyle: 'italic' }, action: { kind: 'wrap', before: '*', after: '*', placeholder: 'italic text' } },
-  { label: 'H', title: 'Heading', action: { kind: 'line', prefix: '## ' } },
-  { label: 'Link', title: 'Link', action: { kind: 'link' } },
-  { label: 'List', title: 'Bullet list', action: { kind: 'line', prefix: '- ' } },
+const TOOLS: { label: string; title: string; shortcut?: string; style?: React.CSSProperties; action: ToolAction }[] = [
+  { label: 'B', title: 'Bold (Ctrl+B)', shortcut: 'b', style: { fontWeight: 700 }, action: { kind: 'wrap', before: '**', after: '**', placeholder: 'bold text' } },
+  { label: 'I', title: 'Italic (Ctrl+I)', shortcut: 'i', style: { fontStyle: 'italic' }, action: { kind: 'wrap', before: '*', after: '*', placeholder: 'italic text' } },
+  { label: 'S̶', title: 'Strikethrough', action: { kind: 'wrap', before: '~~', after: '~~', placeholder: 'strikethrough' } },
+  { label: 'H2', title: 'Heading', action: { kind: 'line', prefix: '## ' } },
+  { label: 'Link', title: 'Link (Ctrl+K)', shortcut: 'k', action: { kind: 'link' } },
+  { label: '• List', title: 'Bullet list', action: { kind: 'line', prefix: '- ' } },
+  { label: '1. List', title: 'Numbered list', action: { kind: 'line', prefix: '1. ' } },
   { label: 'Quote', title: 'Blockquote', action: { kind: 'line', prefix: '> ' } },
   { label: 'Code', title: 'Inline code', style: { fontFamily: 'monospace' }, action: { kind: 'wrap', before: '`', after: '`', placeholder: 'code' } },
 ]
 
-// A small dependency-free markdown editor: a formatting toolbar that edits the
-// textarea selection, plus a Write/Preview toggle backed by the module's
-// client-safe markdownToHtml. Shared by the signature page and the reply box.
+const SHORTCUT_MAP = Object.fromEntries(
+  TOOLS.filter((t) => t.shortcut).map((t) => [t.shortcut!, t.action])
+)
+
 export default function MarkdownEditor({ value, onChange, rows = 8, placeholder, minHeight = '8rem', previewContent }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null)
   const pendingSel = useRef<[number, number] | null>(null)
@@ -47,44 +50,52 @@ export default function MarkdownEditor({ value, onChange, rows = 8, placeholder,
     }
   }, [value])
 
-  function apply(action: ToolAction) {
+  function apply(action: ToolAction, currentValue = value) {
     const ta = ref.current
     if (!ta) return
     const start = ta.selectionStart
     const end = ta.selectionEnd
-    const selected = value.slice(start, end)
+    const selected = currentValue.slice(start, end)
 
-    let next = value
+    let next = currentValue
     let selStart = start
     let selEnd = end
 
     if (action.kind === 'wrap') {
       const inner = selected || action.placeholder
-      next = value.slice(0, start) + action.before + inner + action.after + value.slice(end)
+      next = currentValue.slice(0, start) + action.before + inner + action.after + currentValue.slice(end)
       selStart = start + action.before.length
       selEnd = selStart + inner.length
     } else if (action.kind === 'line') {
-      const lineStart = value.lastIndexOf('\n', start - 1) + 1
-      const nl = value.indexOf('\n', end)
-      const lineEnd = nl === -1 ? value.length : nl
-      const block = value.slice(lineStart, lineEnd)
+      const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1
+      const nl = currentValue.indexOf('\n', end)
+      const lineEnd = nl === -1 ? currentValue.length : nl
+      const block = currentValue.slice(lineStart, lineEnd)
       const prefixed = block
         .split('\n')
         .map((line) => (line.startsWith(action.prefix) ? line : action.prefix + line))
         .join('\n')
-      next = value.slice(0, lineStart) + prefixed + value.slice(lineEnd)
+      next = currentValue.slice(0, lineStart) + prefixed + currentValue.slice(lineEnd)
       selStart = lineStart
       selEnd = lineStart + prefixed.length
     } else {
       const text = selected || 'text'
       const snippet = `[${text}](url)`
-      next = value.slice(0, start) + snippet + value.slice(end)
+      next = currentValue.slice(0, start) + snippet + currentValue.slice(end)
       selStart = start + text.length + 3 // position of "url"
       selEnd = selStart + 3
     }
 
     pendingSel.current = [selStart, selEnd]
     onChange(next)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    const key = e.key.toLowerCase()
+    if ((e.ctrlKey || e.metaKey) && SHORTCUT_MAP[key]) {
+      e.preventDefault()
+      apply(SHORTCUT_MAP[key], value)
+    }
   }
 
   return (
@@ -138,6 +149,7 @@ export default function MarkdownEditor({ value, onChange, rows = 8, placeholder,
             rows={rows}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder}
             style={{ minHeight }}
           />
