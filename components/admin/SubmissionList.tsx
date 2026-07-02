@@ -151,7 +151,11 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
           <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{selected.size} selected</span>
           <button className="btn btn-secondary btn-sm" onClick={() => bulkAction('read')} disabled={busy}>Mark read</button>
           <button className="btn btn-secondary btn-sm" onClick={() => bulkAction('unread')} disabled={busy}>Mark unread</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => bulkAction('archived')} disabled={busy}>Archive</button>
+          {status === 'archived' ? (
+            <button className="btn btn-secondary btn-sm" onClick={() => bulkAction('read')} disabled={busy}>Unarchive</button>
+          ) : (
+            <button className="btn btn-secondary btn-sm" onClick={() => bulkAction('archived')} disabled={busy}>Archive</button>
+          )}
           {canDelete && (
             <button className="btn btn-danger btn-sm" onClick={() => bulkAction('delete')} disabled={busy}>Delete</button>
           )}
@@ -246,13 +250,13 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                       <button
                         type="button"
                         className="row-action-btn"
-                        aria-label="Archive"
-                        disabled={rowBusy[s.id] || s.status === 'archived'}
-                        onClick={() => rowAction(s.id, 'archived')}
+                        aria-label={s.status === 'archived' ? 'Unarchive' : 'Archive'}
+                        disabled={rowBusy[s.id]}
+                        onClick={() => rowAction(s.id, s.status === 'archived' ? 'read' : 'archived')}
                       >
                         {ArchiveIcon}
                         <span className="row-action-tip" aria-hidden="true">
-                          {s.status === 'archived' ? 'Already archived' : 'Archive'}
+                          {s.status === 'archived' ? 'Unarchive' : 'Archive'}
                         </span>
                       </button>
                       {canDelete && (

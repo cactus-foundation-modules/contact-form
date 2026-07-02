@@ -4,6 +4,7 @@ import { getSubmission, updateSubmission } from '@/modules/contact-form/lib/db'
 import { markdownToHtml } from '@/lib/sanitize'
 import ReplyComposer from '@/modules/contact-form/components/admin/ReplyComposer'
 import DeleteSubmissionButton from '@/modules/contact-form/components/admin/DeleteSubmissionButton'
+import ArchiveToggleButton from '@/modules/contact-form/components/admin/ArchiveToggleButton'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -44,7 +45,10 @@ export default async function SubmissionDetailPage({ params }: Props) {
             {submission.subject ?? `Message from ${submission.name}`}
           </h1>
         </div>
-        {canDelete && <DeleteSubmissionButton submissionId={id} />}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <ArchiveToggleButton submissionId={id} archived={submission.status === 'archived'} />
+          {canDelete && <DeleteSubmissionButton submissionId={id} />}
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
