@@ -5,7 +5,7 @@ import { validateSubmission, sanitiseField } from '@/modules/contact-form/lib/va
 import { sendSubmissionNotification, sendAutoReply } from '@/modules/contact-form/lib/email'
 import { checkContactRateLimit } from '@/modules/contact-form/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/auth/turnstile'
-import { isTurnstileConfigured } from '@/lib/config/env'
+import { isTurnstileConfigured, getSiteUrlOrNull } from '@/lib/config/env'
 import { prisma } from '@/lib/db/prisma'
 import { blockPropsToConfig, type ContactFormBlockProps } from '@/modules/contact-form/components/puck/ContactFormBlock'
 import type { ContactFormConfig } from '@/modules/contact-form/lib/types'
@@ -213,13 +213,17 @@ export async function POST(request: NextRequest) {
   // Step 7: Fetch site config for email fallback
   const siteConfig = await prisma.siteConfig.findUnique({
     where: { id: 'singleton' },
-    select: { emailFromAddress: true },
+    select: { emailFromAddress: true, adminPath: true },
   })
   const siteAdminEmail = siteConfig?.emailFromAddress ?? ''
+  const siteUrl = getSiteUrlOrNull()
+  const inboxUrl = siteUrl && siteConfig?.adminPath
+    ? `${siteUrl}/${siteConfig.adminPath}/m/contact-form/inbox/${submissionId}`
+    : null
 
   const submission = await getSubmission(submissionId)
   if (submission) {
-    sendSubmissionNotification(submission, config, siteAdminEmail).catch((err) =>
+    sendSubmissionNotification(submission, config, siteAdminEmail, inboxUrl).catch((err) =>
       console.error('[contact-form] Notification email failed:', err)
     )
 

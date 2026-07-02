@@ -7,6 +7,7 @@ export type ContactFormConfig = {
   requireSubject: boolean
   nameValidationMode: 'first_only' | 'both'
   notificationEmail: string | null
+  emailNotifyMode: 'full' | 'notify' | 'off'
   ccEmails: string[]
   autoReplyEnabled: boolean
   autoReplyBody: string | null

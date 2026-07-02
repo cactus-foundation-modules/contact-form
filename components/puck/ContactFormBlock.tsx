@@ -59,6 +59,7 @@ export type ContactFormBlockProps = {
   nameValidationMode?: string
   // Notifications
   notificationEmail?: string
+  emailNotifyMode?: string
   ccEmails?: string
   autoReplyEnabled?: string
   autoReplyBody?: string
@@ -86,6 +87,7 @@ export function blockPropsToConfig(props: ContactFormBlockProps): ContactFormCon
     requireSubject:       props.requireSubject === 'yes',
     nameValidationMode:   (props.nameValidationMode ?? 'first_only') as 'first_only' | 'both',
     notificationEmail:    props.notificationEmail?.trim() || null,
+    emailNotifyMode:      (props.emailNotifyMode ?? 'full') as 'full' | 'notify' | 'off',
     ccEmails:             props.ccEmails
                             ? props.ccEmails.split('\n').map(s => s.trim()).filter(Boolean)
                             : [],
@@ -190,6 +192,15 @@ export const contactFormPuckComponent = {
     },
     // Notifications
     notificationEmail:  { type: 'text' as const,     label: 'Notification email (leave blank for site default)' },
+    emailNotifyMode: {
+      type: 'select' as const,
+      label: 'When a message comes in',
+      options: [
+        { value: 'full',   label: 'Email me the full message' },
+        { value: 'notify', label: 'Just let me know there\'s a new message' },
+        { value: 'off',    label: 'Don\'t email me at all' },
+      ],
+    },
     ccEmails:           { type: 'textarea' as const, label: 'CC emails (one per line)' },
     autoReplyEnabled: {
       type: 'select' as const, label: 'Auto-reply to sender',
@@ -231,6 +242,7 @@ export const contactFormPuckComponent = {
     requireSubject:       'no',
     nameValidationMode:   'first_only',
     notificationEmail:    '',
+    emailNotifyMode:      'full',
     ccEmails:             '',
     autoReplyEnabled:     'no',
     autoReplyBody:        '',

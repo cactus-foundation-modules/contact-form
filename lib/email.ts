@@ -5,10 +5,29 @@ import type { ContactFormConfig, ContactSubmission } from './types'
 export async function sendSubmissionNotification(
   submission: ContactSubmission,
   config: ContactFormConfig,
-  siteAdminEmail: string
+  siteAdminEmail: string,
+  inboxUrl?: string | null
 ): Promise<void> {
+  if (config.emailNotifyMode === 'off') return
+
   const to = config.notificationEmail ?? siteAdminEmail
   if (!to) return
+
+  if (config.emailNotifyMode === 'notify') {
+    const emailSubject = `New contact form message from ${submission.name}`
+    const viewLine = inboxUrl ? `View and reply: ${inboxUrl}` : 'Log in to your site to view and reply.'
+    const text = `You've received a new contact form message.\n\n${viewLine}`
+    const html = `<div style="font-family:sans-serif;max-width:600px"><p>You've received a new contact form message.</p><p>${inboxUrl ? `<a href="${inboxUrl}">View and reply</a>` : 'Log in to your site to view and reply.'}</p></div>`
+
+    await sendEmail({
+      to,
+      cc: config.ccEmails.length ? config.ccEmails : undefined,
+      subject: emailSubject,
+      html,
+      text,
+    })
+    return
+  }
 
   const subjectSuffix = submission.subject ? `: ${submission.subject}` : ''
   const emailSubject = `New contact form submission${subjectSuffix}`
