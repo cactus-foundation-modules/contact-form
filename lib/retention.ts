@@ -27,7 +27,7 @@ function collectContactFormBlocks(data: unknown): Array<{ id: string; retentionD
   return blocks
 }
 
-export async function runRetentionPolicy(): Promise<void> {
+export async function runRetentionPolicy(): Promise<number> {
   const blockMap = new Map<string, number>()
 
   const [pages, layouts] = await Promise.all([
@@ -48,9 +48,11 @@ export async function runRetentionPolicy(): Promise<void> {
     }
   }
 
+  let deleted = 0
   for (const [blockId, retentionDays] of blockMap.entries()) {
     if (retentionDays > 0) {
-      await pruneExpiredSubmissionsByBlock(blockId, retentionDays)
+      deleted += await pruneExpiredSubmissionsByBlock(blockId, retentionDays)
     }
   }
+  return deleted
 }

@@ -15,6 +15,9 @@
   "requiredEnvVars": [],
   "cookieCategories": [],
   "teardown": ["ContactSubmission", "ContactSubmissionReply"],
+  "cronJobs": [
+    { "path": "/api/m/contact-form/cron/retention", "schedule": "0 3 * * *" }
+  ],
   "puckBlocks": [
     {
       "type": "ContactForm",
