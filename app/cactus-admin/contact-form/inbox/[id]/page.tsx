@@ -2,6 +2,7 @@ import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { prisma } from '@/lib/db/prisma'
 import { getSubmission, updateSubmission } from '@/modules/contact-form/lib/db'
+import type { ThreadMessageContribution } from '@/modules/contact-form/lib/types'
 import { markdownToHtml } from '@/lib/sanitize'
 import ReplyComposer from '@/modules/contact-form/components/admin/ReplyComposer'
 import DeleteSubmissionButton from '@/modules/contact-form/components/admin/DeleteSubmissionButton'
@@ -57,6 +58,43 @@ export default async function SubmissionDetailPage({ params }: Props) {
     }
   }
   const detailExtraComponents = moduleExtensionPointComponents['contact-form.submission-detail'] ?? {}
+
+  // Other modules (e.g. Reply Catcher) can contribute extra thread messages
+  // (e.g. replies caught from a real mailbox) via the "contact-form.thread-messages"
+  // extension point. Contributions are merged chronologically with the
+  // submission's own replies into a single timeline below.
+  const threadExtraIds: string[] = []
+  for (const mod of activeModules) {
+    const manifest = mod.manifest as { extensionPoints?: ExtensionPointEntry[] } | null
+    if (!manifest?.extensionPoints) continue
+    for (const entry of manifest.extensionPoints) {
+      if (entry.point !== 'contact-form.thread-messages') continue
+      if (!entry.permission || await hasPermission(user, entry.permission)) {
+        threadExtraIds.push(entry.id)
+      }
+    }
+  }
+  const threadExtraFns = moduleExtensionPointComponents['contact-form.thread-messages'] ?? {}
+  const threadContributions = (
+    await Promise.all(
+      threadExtraIds.map((extraId) => {
+        const getMessages = threadExtraFns[extraId] as
+          | ((submissionId: string) => Promise<ThreadMessageContribution[]>)
+          | undefined
+        return getMessages ? getMessages(id) : Promise.resolve([])
+      })
+    )
+  ).flat()
+
+  const threadMessages: ThreadMessageContribution[] = [
+    ...submission.replies.map((reply) => ({
+      id: reply.id,
+      createdAt: reply.createdAt,
+      senderLabel: reply.sentByDisplayName ?? reply.sentByEmail,
+      body: reply.signatureSnapshot ? `${reply.body}\n\n---\n\n${reply.signatureSnapshot}` : reply.body,
+    })),
+    ...threadContributions,
+  ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
 
   return (
     <div>
@@ -120,31 +158,33 @@ export default async function SubmissionDetailPage({ params }: Props) {
         />
       </div>
 
-      {submission.replies.length > 0 && (
+      {threadMessages.length > 0 && (
         <div style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Replies</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {submission.replies.map((reply) => (
-              <div key={reply.id} className="card" style={{ borderLeft: '3px solid var(--color-accent)' }}>
+            {threadMessages.map((msg) => (
+              <div key={msg.id} className="card" style={{ borderLeft: '3px solid var(--color-accent)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>
-                    {reply.sentByDisplayName ?? reply.sentByEmail}
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {msg.senderLabel}
+                    {msg.badge && (
+                      <span style={{
+                        fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
+                        padding: '0.0625rem 0.375rem', borderRadius: '999px',
+                        background: 'var(--color-bg)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)',
+                      }}>
+                        {msg.badge}
+                      </span>
+                    )}
                   </span>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                    {reply.createdAt.toLocaleString('en-GB')}
+                    {msg.createdAt.toLocaleString('en-GB')}
                   </span>
                 </div>
                 <div
                   className="prose"
                   style={{ fontSize: '0.9375rem' }}
-                  dangerouslySetInnerHTML={{
-                    __html: markdownToHtml(
-                      reply.signatureSnapshot
-                        ? `${reply.body}\n\n---\n\n${reply.signatureSnapshot}`
-                        : reply.body,
-                      { breaks: true }
-                    ),
-                  }}
+                  dangerouslySetInnerHTML={{ __html: markdownToHtml(msg.body, { breaks: true }) }}
                 />
               </div>
             ))}

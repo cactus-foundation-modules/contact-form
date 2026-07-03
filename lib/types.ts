@@ -64,6 +64,17 @@ export type SubmissionWithReplies = ContactSubmission & {
   replies: ContactSubmissionReply[]
 }
 
+// Contract for the "contact-form.thread-messages" extension point: modules
+// contribute additional thread entries (e.g. mailbox-caught replies) that
+// core merges chronologically with its own replies into one timeline.
+export type ThreadMessageContribution = {
+  id: string
+  createdAt: Date
+  senderLabel: string
+  body: string
+  badge?: string
+}
+
 export type PaginatedSubmissions = {
   submissions: ContactSubmission[]
   total: number
