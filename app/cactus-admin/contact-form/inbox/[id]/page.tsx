@@ -163,19 +163,17 @@ export default async function SubmissionDetailPage({ params }: Props) {
           <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Replies</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {threadMessages.map((msg) => (
-              <div key={msg.id} className="card" style={{ borderLeft: '3px solid var(--color-accent)' }}>
+              <div
+                key={msg.id}
+                className="card"
+                style={{
+                  borderLeft: `3px solid ${msg.badge ? 'var(--color-border-strong)' : 'var(--color-accent)'}`,
+                  background: msg.badge ? 'var(--color-bg-subtle)' : undefined,
+                }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>
                     {msg.senderLabel}
-                    {msg.badge && (
-                      <span style={{
-                        fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
-                        padding: '0.0625rem 0.375rem', borderRadius: '999px',
-                        background: 'var(--color-bg)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)',
-                      }}>
-                        {msg.badge}
-                      </span>
-                    )}
                   </span>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
                     {msg.createdAt.toLocaleString('en-GB')}
