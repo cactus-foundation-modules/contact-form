@@ -31,6 +31,26 @@ export async function POST(
   const profile = await getUserProfile(user.id)
   const signature = profile?.signature ?? null
 
+  // Send the reply email first - only persist the reply once it's actually
+  // sent, so a failed send doesn't leave a phantom reply in the thread that
+  // the submitter never received.
+  const siteConfig = await prisma.siteConfig.findUnique({
+    where: { id: 'singleton' },
+    select: { emailFromAddress: true },
+  })
+
+  try {
+    await sendReply({
+      submission,
+      replyBody:  parsed.data.body,
+      signature,
+      fromEmail:  siteConfig?.emailFromAddress ?? '',
+    })
+  } catch (err) {
+    console.error('[contact-form] Reply email failed:', err)
+    return errorResponse(err instanceof Error ? err.message : 'Failed to send reply email', 502)
+  }
+
   // Store reply
   const replyId = await createReply({
     submissionId:      id,
@@ -45,19 +65,6 @@ export async function POST(
   syncMessagesNotification().catch((err) =>
     console.error('[contact-form] Failed to sync messages notification:', err)
   )
-
-  // Send the reply email
-  const siteConfig = await prisma.siteConfig.findUnique({
-    where: { id: 'singleton' },
-    select: { emailFromAddress: true },
-  })
-
-  sendReply({
-    submission,
-    replyBody:  parsed.data.body,
-    signature,
-    fromEmail:  siteConfig?.emailFromAddress ?? '',
-  }).catch((err) => console.error('[contact-form] Reply email failed:', err))
 
   return NextResponse.json({ id: replyId }, { status: 201 })
 }
