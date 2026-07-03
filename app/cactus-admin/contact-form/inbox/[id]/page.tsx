@@ -1,10 +1,12 @@
 import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
+import { prisma } from '@/lib/db/prisma'
 import { getSubmission, updateSubmission } from '@/modules/contact-form/lib/db'
 import { markdownToHtml } from '@/lib/sanitize'
 import ReplyComposer from '@/modules/contact-form/components/admin/ReplyComposer'
 import DeleteSubmissionButton from '@/modules/contact-form/components/admin/DeleteSubmissionButton'
 import ArchiveToggleButton from '@/modules/contact-form/components/admin/ArchiveToggleButton'
+import { moduleExtensionPointComponents } from '@/lib/modules/extension-points'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -12,6 +14,8 @@ import { notFound } from 'next/navigation'
 export const metadata = { title: 'Submission — Contact Inbox' }
 
 type Props = { params: Promise<{ id: string }> }
+
+type ExtensionPointEntry = { point: string; id: string; permission?: string }
 
 export default async function SubmissionDetailPage({ params }: Props) {
   const user = await getSessionFromCookie()
@@ -33,6 +37,26 @@ export default async function SubmissionDetailPage({ params }: Props) {
   const canDelete = await hasPermission(user, 'contact.delete')
 
   const adminPath = (await headers()).get('x-cactus-admin-path') ?? ''
+
+  // Other modules (e.g. Reply Catcher) can contribute content here via the
+  // "contact-form.submission-detail" extension point — permission-filtered live
+  // from Module.manifest, same pattern as sidebar navEntries.
+  const activeModules = await prisma.module.findMany({
+    where: { status: { in: ['active', 'update_available'] } },
+    select: { manifest: true },
+  })
+  const detailExtraIds: string[] = []
+  for (const mod of activeModules) {
+    const manifest = mod.manifest as { extensionPoints?: ExtensionPointEntry[] } | null
+    if (!manifest?.extensionPoints) continue
+    for (const entry of manifest.extensionPoints) {
+      if (entry.point !== 'contact-form.submission-detail') continue
+      if (!entry.permission || await hasPermission(user, entry.permission)) {
+        detailExtraIds.push(entry.id)
+      }
+    }
+  }
+  const detailExtraComponents = moduleExtensionPointComponents['contact-form.submission-detail'] ?? {}
 
   return (
     <div>
@@ -127,6 +151,11 @@ export default async function SubmissionDetailPage({ params }: Props) {
           </div>
         </div>
       )}
+
+      {detailExtraIds.map((extraId) => {
+        const DetailExtra = detailExtraComponents[extraId]
+        return DetailExtra ? <DetailExtra key={extraId} submissionId={id} /> : null
+      })}
 
       {canReply && (
         <ReplyComposer submissionId={id} submissionEmail={submission.email} />

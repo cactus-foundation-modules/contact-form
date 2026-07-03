@@ -1,12 +1,16 @@
 import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
+import { prisma } from '@/lib/db/prisma'
 import { getSubmissions } from '@/modules/contact-form/lib/db'
 import SubmissionList from '@/modules/contact-form/components/admin/SubmissionList'
+import { moduleExtensionPointComponents } from '@/lib/modules/extension-points'
 import { headers } from 'next/headers'
 
 export const metadata = { title: 'Contact Inbox — Admin' }
 
 type Props = { searchParams: Promise<Record<string, string>> }
+
+type ExtensionPointEntry = { point: string; id: string; permission?: string }
 
 export default async function ContactInboxPage({ searchParams }: Props) {
   const user = await getSessionFromCookie()
@@ -29,11 +33,35 @@ export default async function ContactInboxPage({ searchParams }: Props) {
 
   const adminPath = (await headers()).get('x-cactus-admin-path') ?? ''
 
+  // Other modules (e.g. Reply Catcher) can contribute an action button here via
+  // the "contact-form.inbox-actions" extension point — permission-filtered live
+  // from Module.manifest, same pattern as sidebar navEntries.
+  const activeModules = await prisma.module.findMany({
+    where: { status: { in: ['active', 'update_available'] } },
+    select: { manifest: true },
+  })
+  const inboxActionIds: string[] = []
+  for (const mod of activeModules) {
+    const manifest = mod.manifest as { extensionPoints?: ExtensionPointEntry[] } | null
+    if (!manifest?.extensionPoints) continue
+    for (const entry of manifest.extensionPoints) {
+      if (entry.point !== 'contact-form.inbox-actions') continue
+      if (!entry.permission || await hasPermission(user, entry.permission)) {
+        inboxActionIds.push(entry.id)
+      }
+    }
+  }
+  const inboxActionComponents = moduleExtensionPointComponents['contact-form.inbox-actions'] ?? {}
+
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">Contact Inbox</h1>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {inboxActionIds.map((id) => {
+            const ActionButton = inboxActionComponents[id]
+            return ActionButton ? <ActionButton key={id} adminPath={adminPath} /> : null
+          })}
           {canReply && (
             <a
               href={`/${adminPath}/m/contact-form/my-signature`}
