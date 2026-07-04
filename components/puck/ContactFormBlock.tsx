@@ -14,9 +14,9 @@ async function fetchAuthConfig(): Promise<{ emailConfigured: boolean; turnstileC
 
 function EmailNotConfiguredNotice() {
   return (
-    <div style={{ padding: '0.75rem 1rem', background: '#fef3cd', border: '1px solid #ffc107', borderRadius: 6 }}>
-      <strong style={{ fontSize: '0.8125rem', color: '#856404', display: 'block', marginBottom: '0.25rem' }}>Email not configured</strong>
-      <span style={{ fontSize: '0.8125rem', color: '#856404' }}>
+    <div style={{ padding: '0.75rem 1rem', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 6 }}>
+      <strong style={{ fontSize: '0.8125rem', color: 'var(--color-warning)', display: 'block', marginBottom: '0.25rem' }}>Email not configured</strong>
+      <span style={{ fontSize: '0.8125rem', color: 'var(--color-warning)' }}>
         Email delivery (Brevo or SMTP) is not set up - configure it in Settings &rarr; Integrations before using this form.
       </span>
     </div>
@@ -26,17 +26,17 @@ function EmailNotConfiguredNotice() {
 function TurnstileUnavailableField() {
   return (
     <div>
-      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text)', marginBottom: '0.375rem' }}>
         Cloudflare Turnstile
       </label>
       <select
         disabled
         defaultValue="no"
-        style={{ width: '100%', padding: '0.375rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.8125rem', fontFamily: 'inherit', background: '#f9fafb', color: '#6b7280' }}
+        style={{ width: '100%', padding: '0.375rem 0.5rem', border: '1px solid var(--color-border)', borderRadius: 6, fontSize: '0.8125rem', fontFamily: 'inherit', background: 'var(--color-bg-subtle)', color: 'var(--color-text-muted)' }}
       >
         <option value="no">Disabled</option>
       </select>
-      <p style={{ fontSize: '0.75rem', color: '#9ca3af', margin: '0.25rem 0 0' }}>
+      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '0.25rem 0 0' }}>
         Turnstile is not configured - add your site key in Settings &rarr; Integrations.
       </p>
     </div>
@@ -258,7 +258,7 @@ export const contactFormPuckComponent = {
   async resolveFields(_data: ContactFormBlockProps, { fields }: { fields: any }) {
     const config = await fetchAuthConfig()
     if (!config.emailConfigured) {
-      return { _setupNotice: { type: 'custom' as const, render: EmailNotConfiguredNotice } }
+      return { _setupNotice: { type: 'custom' as const, render: EmailNotConfiguredNotice }, ...fields }
     }
     if (!config.turnstileConfigured) {
       return { ...fields, turnstileEnabled: { type: 'custom' as const, render: TurnstileUnavailableField } }
