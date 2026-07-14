@@ -3,8 +3,9 @@ import { createSubmission, getSubmission } from '@/modules/contact-form/lib/db'
 import { syncMessagesNotification } from '@/modules/contact-form/lib/notify'
 import { validateSubmission, sanitiseField } from '@/modules/contact-form/lib/validate'
 import { sendSubmissionNotification, sendAutoReply } from '@/modules/contact-form/lib/email'
-import { checkContactRateLimit } from '@/modules/contact-form/lib/rate-limit'
+import { checkContactRateLimit, checkContactEmailRateLimit } from '@/modules/contact-form/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/auth/turnstile'
+import { clientIpFromHeaders } from '@/lib/auth/rate-limit'
 import { isTurnstileConfigured, getSiteUrlOrNull } from '@/lib/config/env'
 import { prisma } from '@/lib/db/prisma'
 import { blockPropsToConfig, type ContactFormBlockProps } from '@/modules/contact-form/components/puck/ContactFormBlock'
@@ -154,6 +155,7 @@ export async function POST(request: NextRequest) {
   const { config, sourceType, sourceId, sourceLabel } = resolved
 
   // Step 3: Turnstile verification
+  let turnstileVerified = false
   if (config.turnstileEnabled && isTurnstileConfigured()) {
     const ok = await verifyTurnstile(raw.turnstileToken)
     if (!ok) {
@@ -162,17 +164,26 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    turnstileVerified = true
   }
 
-  // Step 4: IP-based rate limiting (scoped to this block)
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    request.headers.get('x-real-ip') ??
-    null
+  // Step 4: rate limiting.
+  //
+  // The IP comes from the last forwarded hop, never the first: a caller can
+  // prepend anything it likes to x-forwarded-for, and reading the leftmost entry
+  // let a spammer rotate a fake address per request and skip the limit entirely.
+  // And a request whose IP can't be established is limited under a shared key
+  // rather than waved through, which is what "skip if null" used to do.
+  const ip = clientIpFromHeaders((name) => request.headers.get(name))
 
-  if (config.rateLimitEnabled && ip) {
-    const allowed = await checkContactRateLimit(ip, config, blockId)
-    if (!allowed) {
+  if (config.rateLimitEnabled) {
+    const [ipAllowed, emailAllowed] = await Promise.all([
+      checkContactRateLimit(ip, config, blockId),
+      // Also limited per recipient address, so the form can't be pointed at one
+      // person and used to mail-bomb them from a rotating set of addresses.
+      checkContactEmailRateLimit(sanitised.email, config),
+    ])
+    if (!ipAllowed || !emailAllowed) {
       return NextResponse.json(
         { errors: { _form: 'You have sent too many messages recently. Please try again later.' } },
         { status: 429 }
@@ -196,7 +207,7 @@ export async function POST(request: NextRequest) {
     company:      config.showCompany ? sanitised.company : null,
     subject:      config.showSubject ? sanitised.subject : null,
     message:      sanitised.message,
-    ipAddress:    ip,
+    ipAddress:    ip === 'unknown' ? null : ip,
     userAgent,
     gdprConsent:  sanitised.gdprConsent,
     sourceType,
@@ -227,7 +238,14 @@ export async function POST(request: NextRequest) {
       console.error('[contact-form] Notification email failed:', err)
     )
 
-    if (config.autoReplyEnabled && config.autoReplyBody) {
+    // The auto-reply is the one email this endpoint sends to an address nobody
+    // has verified - typed by an anonymous stranger, delivered from the site's
+    // own trusted domain. That makes it an open relay of sorts: point the form at
+    // a victim, and the site does the spamming. So it only goes out when a
+    // Turnstile check actually passed, not merely when the owner ticked the
+    // auto-reply box. Turning Turnstile off now costs the auto-reply, not the
+    // message itself - the admin notification below is unaffected.
+    if (config.autoReplyEnabled && config.autoReplyBody && turnstileVerified) {
       sendAutoReply(submission, config, siteConfig?.emailFromAddress ?? '').catch((err) =>
         console.error('[contact-form] Auto-reply email failed:', err)
       )

