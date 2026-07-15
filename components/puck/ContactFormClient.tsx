@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import type { ContactFormConfig } from '@/modules/contact-form/lib/types'
+import type { ContactFormPublicConfig } from '@/modules/contact-form/lib/types'
 
 type Props = {
-  config: ContactFormConfig
+  // Public subset only - the full config carries notificationEmail/ccEmails,
+  // and a client-component prop is serialised straight into the page payload.
+  config: ContactFormPublicConfig
   blockId: string
   formTitle?: string
   introText?: string

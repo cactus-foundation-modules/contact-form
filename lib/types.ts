@@ -21,6 +21,18 @@ export type ContactFormConfig = {
   successMessage: string
 }
 
+// The subset of ContactFormConfig a visitor's browser is allowed to see.
+// Everything else is server-only: a client-component prop is serialised into
+// the page payload verbatim, so notificationEmail/ccEmails there hand the
+// owner's address to any harvester reading view-source. The submit route
+// re-derives the full config server-side from the stored block props, so the
+// client never needs the rest.
+export type ContactFormPublicConfig = Pick<ContactFormConfig,
+  | 'showPhone' | 'showCompany' | 'showSubject'
+  | 'requirePhone' | 'requireCompany' | 'requireSubject'
+  | 'gdprConsentEnabled' | 'gdprConsentLabel' | 'successMessage'
+>
+
 export type ContactSubmission = {
   id: string
   createdAt: Date

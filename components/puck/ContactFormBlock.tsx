@@ -1,5 +1,5 @@
 import ContactFormClient, { getFormPadding } from './ContactFormClient'
-import type { ContactFormConfig } from '@/modules/contact-form/lib/types'
+import type { ContactFormConfig, ContactFormPublicConfig } from '@/modules/contact-form/lib/types'
 
 // Cached fetch so resolveFields doesn't refetch on every panel keystroke
 let _authConfigCache: { data: { emailConfigured: boolean; turnstileConfigured: boolean }; expires: number } | null = null
@@ -106,8 +106,25 @@ export function blockPropsToConfig(props: ContactFormBlockProps): ContactFormCon
 
 // RSC version: async server component — derives config from block props and renders the real form.
 // Registered in puckRscConfig so page visitors see the actual form.
+//
+// Only the display subset of the config crosses to the client component: props
+// handed to a 'use client' component land verbatim in the served page payload,
+// which put notificationEmail (the owner's address, the very thing the email
+// anti-spam scheme hides) into view-source. The submit route rebuilds the full
+// config server-side from the stored block props, so the client needs nothing more.
 export async function ContactFormBlockRsc(props: ContactFormBlockProps & { id?: string }) {
-  const config = blockPropsToConfig(props)
+  const full = blockPropsToConfig(props)
+  const config: ContactFormPublicConfig = {
+    showPhone:          full.showPhone,
+    showCompany:        full.showCompany,
+    showSubject:        full.showSubject,
+    requirePhone:       full.requirePhone,
+    requireCompany:     full.requireCompany,
+    requireSubject:     full.requireSubject,
+    gdprConsentEnabled: full.gdprConsentEnabled,
+    gdprConsentLabel:   full.gdprConsentLabel,
+    successMessage:     full.successMessage,
+  }
   const blockId = props.id ?? ''
   return (
     <ContactFormClient
