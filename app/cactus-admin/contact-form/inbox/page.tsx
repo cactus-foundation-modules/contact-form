@@ -1,6 +1,7 @@
 import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { prisma } from '@/lib/db/prisma'
+import { INSTALLED_MODULE_WHERE } from '@/lib/modules/live-status'
 import { getSubmissions } from '@/modules/contact-form/lib/db'
 import SubmissionList from '@/modules/contact-form/components/admin/SubmissionList'
 import { moduleExtensionPointComponents } from '@/lib/modules/extension-points'
@@ -37,7 +38,7 @@ export default async function ContactInboxPage({ searchParams }: Props) {
   // the "contact-form.inbox-actions" extension point — permission-filtered live
   // from Module.manifest, same pattern as sidebar navEntries.
   const activeModules = await prisma.module.findMany({
-    where: { status: { in: ['active', 'update_available'] } },
+    where: { ...INSTALLED_MODULE_WHERE },
     select: { manifest: true },
   })
   const inboxActionIds: string[] = []

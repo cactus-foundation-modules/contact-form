@@ -1,6 +1,7 @@
 import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { prisma } from '@/lib/db/prisma'
+import { INSTALLED_MODULE_WHERE } from '@/lib/modules/live-status'
 import { getSubmission, updateSubmission } from '@/modules/contact-form/lib/db'
 import type { ThreadMessageContribution } from '@/modules/contact-form/lib/types'
 import { markdownToHtml } from '@/lib/sanitize'
@@ -43,7 +44,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
   // "contact-form.submission-detail" extension point — permission-filtered live
   // from Module.manifest, same pattern as sidebar navEntries.
   const activeModules = await prisma.module.findMany({
-    where: { status: { in: ['active', 'update_available'] } },
+    where: { ...INSTALLED_MODULE_WHERE },
     select: { manifest: true },
   })
   const detailExtraIds: string[] = []
