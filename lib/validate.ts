@@ -1,6 +1,9 @@
 import type { ContactFormConfig } from './types'
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Reject quotes and angle brackets in addition to whitespace and '@'. None are
+// valid in an ordinary (unquoted) address, and allowing '"' let a submitted
+// address break out of the mailto: href attribute in the owner notification.
+const EMAIL_RE = /^[^\s@"'<>]+@[^\s@"'<>]+\.[^\s@"'<>]+$/
 
 export type ValidationErrors = Record<string, string>
 

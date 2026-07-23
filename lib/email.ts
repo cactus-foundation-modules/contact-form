@@ -2,6 +2,20 @@ import { sendEmail } from '@/lib/email/index'
 import { markdownToHtml, markdownToPlainText } from '@/lib/sanitize'
 import type { ContactFormConfig, ContactSubmission } from './types'
 
+// Escape every HTML-significant character so a submitted field can never inject
+// markup into the owner notification email. Must run at the point of
+// interpolation - stripping tags upstream is not enough, because a lone '<' with
+// no closing '>' survives tag-stripping and is then closed by a later
+// interpolation (e.g. the \n -> <br> conversion), reopening the injection.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function sendSubmissionNotification(
   submission: ContactSubmission,
   config: ContactFormConfig,
@@ -43,13 +57,17 @@ export async function sendSubmissionNotification(
     `Received: ${submission.createdAt.toISOString()}`,
   ].filter(Boolean).join('\n\n')
 
+  // Escape first, then convert newlines to <br> - never the other way round, or
+  // the <br> we add becomes the closing bracket for a dangling submitted '<'.
+  const emailEsc = escapeHtml(submission.email)
+  const messageHtml = escapeHtml(submission.message).replace(/\n/g, '<br>')
   const htmlFields = [
-    `<p><strong>Name:</strong> ${submission.name}</p>`,
-    `<p><strong>Email:</strong> <a href="mailto:${submission.email}">${submission.email}</a></p>`,
-    submission.phone ? `<p><strong>Phone:</strong> ${submission.phone}</p>` : null,
-    submission.company ? `<p><strong>Company:</strong> ${submission.company}</p>` : null,
-    submission.subject ? `<p><strong>Subject:</strong> ${submission.subject}</p>` : null,
-    `<p><strong>Message:</strong></p><blockquote><p>${submission.message.replace(/\n/g, '<br>')}</p></blockquote>`,
+    `<p><strong>Name:</strong> ${escapeHtml(submission.name)}</p>`,
+    `<p><strong>Email:</strong> <a href="mailto:${emailEsc}">${emailEsc}</a></p>`,
+    submission.phone ? `<p><strong>Phone:</strong> ${escapeHtml(submission.phone)}</p>` : null,
+    submission.company ? `<p><strong>Company:</strong> ${escapeHtml(submission.company)}</p>` : null,
+    submission.subject ? `<p><strong>Subject:</strong> ${escapeHtml(submission.subject)}</p>` : null,
+    `<p><strong>Message:</strong></p><blockquote><p>${messageHtml}</p></blockquote>`,
     submission.gdprConsent ? `<p><strong>GDPR consent:</strong> Yes</p>` : null,
     `<p><em>Received: ${submission.createdAt.toISOString()}</em></p>`,
   ].filter(Boolean).join('')
