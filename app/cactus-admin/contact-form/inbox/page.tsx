@@ -22,7 +22,9 @@ export default async function ContactInboxPage({ searchParams }: Props) {
 
   const sp = await searchParams
   const status  = sp.status ?? 'all'
-  const page    = parseInt(sp.page ?? '1', 10)
+  // Clamped and NaN-proofed - a mistyped ?page= otherwise reached getSubmissions
+  // as NaN and rendered an error page instead of page one.
+  const page    = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
   const perPage = 25
 
   const { submissions, total } = await getSubmissions({ status, page, perPage })

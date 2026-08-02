@@ -19,8 +19,14 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const status  = searchParams.get('status') ?? undefined
-  const page    = parseInt(searchParams.get('page') ?? '1', 10)
-  const perPage = parseInt(searchParams.get('perPage') ?? '25', 10)
+  // Both clamped and NaN-proofed. parseInt('abc') is NaN, and (NaN - 1) *
+  // perPage reached the query as OFFSET NaN - a 500 where page one is the only
+  // sensible answer. perPage is capped as well, so a hand-typed perPage=999999
+  // cannot ask the database for the whole inbox in one go.
+  const rawPage    = parseInt(searchParams.get('page') ?? '1', 10)
+  const rawPerPage = parseInt(searchParams.get('perPage') ?? '25', 10)
+  const page    = Math.max(1, Number.isNaN(rawPage) ? 1 : rawPage)
+  const perPage = Math.min(100, Math.max(1, Number.isNaN(rawPerPage) ? 25 : rawPerPage))
 
   const result = await getSubmissions({ status, page, perPage })
   return NextResponse.json(result)
