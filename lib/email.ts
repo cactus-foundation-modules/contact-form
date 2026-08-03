@@ -1,4 +1,5 @@
 import { sendEmail } from '@/lib/email/index'
+import { renderEmailTemplate } from '@/lib/email/render'
 import { markdownToHtml, markdownToPlainText } from '@/lib/sanitize'
 import type { ContactFormConfig, ContactSubmission } from './types'
 
@@ -28,23 +29,25 @@ export async function sendSubmissionNotification(
   if (!to) return
 
   if (config.emailNotifyMode === 'notify') {
-    const emailSubject = `New contact form message from ${submission.name}`
-    const viewLine = inboxUrl ? `View and reply: ${inboxUrl}` : 'Log in to your site to view and reply.'
-    const text = `You've received a new contact form message.\n\n${viewLine}`
-    const html = `<div style="font-family:sans-serif;max-width:600px"><p>You've received a new contact form message.</p><p>${inboxUrl ? `<a href="${inboxUrl}">View and reply</a>` : 'Log in to your site to view and reply.'}</p></div>`
+    const rendered = await renderEmailTemplate('contact-form.new-message-brief', {
+      name: submission.name,
+      inboxUrl: inboxUrl ?? '',
+      hasInboxUrl: inboxUrl ? 'true' : 'false',
+      noInboxUrl: inboxUrl ? 'false' : 'true',
+    })
+    if (!rendered) return
 
     await sendEmail({
       to,
       cc: config.ccEmails.length ? config.ccEmails : undefined,
-      subject: emailSubject,
-      html,
-      text,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
     })
     return
   }
 
   const subjectSuffix = submission.subject ? `: ${submission.subject}` : ''
-  const emailSubject = `New contact form submission${subjectSuffix}`
 
   const fields = [
     `Name: ${submission.name}`,
@@ -72,12 +75,24 @@ export async function sendSubmissionNotification(
     `<p><em>Received: ${submission.createdAt.toISOString()}</em></p>`,
   ].filter(Boolean).join('')
 
+  const rendered = await renderEmailTemplate('contact-form.new-message-full', {
+    // Already escaped above, field by field, and travelling as a rawTag - the
+    // <p> and <blockquote> wrapping each value have to survive core's escaping.
+    fields: htmlFields,
+    subjectSuffix,
+    name: submission.name,
+    email: submission.email,
+  })
+  if (!rendered) return
+
   await sendEmail({
     to,
     cc: config.ccEmails.length ? config.ccEmails : undefined,
     replyTo: submission.email,
-    subject: emailSubject,
-    html: `<div style="font-family:sans-serif;max-width:600px">${htmlFields}</div>`,
+    subject: rendered.subject,
+    html: rendered.html,
+    // The plain-text alternative is still the flat field list built above: it
+    // reads far better than a tag-stripped rendering of the HTML one.
     text: fields,
   })
 }
