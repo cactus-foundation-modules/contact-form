@@ -45,6 +45,16 @@ type Props = {
   canReply: boolean
 }
 
+// The list now lives on a tab of core's Inbox, so its own status/paging links have
+// to be built against whatever URL the host renders it at rather than the module's
+// old page. Both carry query params already, hence the join on ? vs &.
+function withParams(href: string, params: Record<string, string | number>): string {
+  const query = Object.entries(params)
+    .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
+    .join('&')
+  return href.includes('?') ? `${href}&${query}` : `${href}?${query}`
+}
+
 const TABS = [
   { label: 'All',      value: 'all'      },
   { label: 'Unread',   value: 'unread'   },
@@ -64,7 +74,7 @@ function relativeDate(date: Date): string {
   return new Date(date).toLocaleDateString('en-GB')
 }
 
-export default function SubmissionList({ submissions, total, page, totalPages, status, canDelete, canReply }: Props) {
+export default function SubmissionList({ submissions, total, page, totalPages, status, canDelete, canReply, listHref }: Props & { listHref: string }) {
   const router = useRouter()
   const adminPath = useAdminPath()
   const base = `/${adminPath}`
@@ -128,7 +138,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
         {TABS.map((tab) => (
           <Link
             key={tab.value}
-            href={`${base}/m/contact-form/inbox?status=${tab.value}`}
+            href={withParams(listHref, { status: tab.value })}
             prefetch={false}
             style={{
               padding: '0.625rem 1rem', textDecoration: 'none',
@@ -284,7 +294,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
       {totalPages > 1 && (
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', justifyContent: 'center' }}>
           {page > 1 && (
-            <Link href={`${base}/m/contact-form/inbox?status=${status}&page=${page - 1}`} className="btn btn-secondary btn-sm">
+            <Link href={withParams(listHref, { status, page: page - 1 })} className="btn btn-secondary btn-sm">
               Previous
             </Link>
           )}
@@ -292,7 +302,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
             Page {page} of {totalPages}
           </span>
           {page < totalPages && (
-            <Link href={`${base}/m/contact-form/inbox?status=${status}&page=${page + 1}`} className="btn btn-secondary btn-sm">
+            <Link href={withParams(listHref, { status, page: page + 1 })} className="btn btn-secondary btn-sm">
               Next
             </Link>
           )}

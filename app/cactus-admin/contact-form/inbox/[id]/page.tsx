@@ -101,7 +101,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
     <div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Link href={`/${adminPath}/m/contact-form/inbox`} className="btn btn-secondary btn-sm">
+          <Link href={`/${adminPath}/inbox?tab=contact-form`} className="btn btn-secondary btn-sm">
             ← Inbox
           </Link>
           <h1 className="page-title" style={{ margin: 0 }}>
