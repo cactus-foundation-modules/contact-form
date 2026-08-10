@@ -139,7 +139,7 @@ export default function MarkdownEditor({ value, onChange, rows = 8, placeholder,
           dangerouslySetInnerHTML={{
             __html: (previewContent ?? value)
               ? markdownToHtml(previewContent ?? value)
-              : '<em style="color:var(--color-text-muted)">Nothing to preview.</em>',
+              : '<em style="color:var(--color-text-secondary)">Nothing to preview.</em>',
           }}
         />
       ) : (

@@ -41,7 +41,7 @@ export default function MySignaturePage() {
       <div className="page-header">
         <h1 className="page-title">My Signature</h1>
       </div>
-      <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>
+      <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
         Your signature is appended below a horizontal rule at the bottom of every reply you send.
         Markdown is supported.
       </p>

@@ -117,35 +117,35 @@ export default async function SubmissionDetailPage({ params }: Props) {
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 2rem', marginBottom: '1rem' }}>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>From</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>From</div>
             <div style={{ fontWeight: 500 }}>{submission.name}</div>
             <a href={`mailto:${submission.email}`} style={{ fontSize: '0.875rem', color: 'var(--color-accent)' }}>{submission.email}</a>
           </div>
           {submission.phone && (
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Phone</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Phone</div>
               <div>{submission.phone}</div>
             </div>
           )}
           {submission.company && (
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Company</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Company</div>
               <div>{submission.company}</div>
             </div>
           )}
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Received</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Received</div>
             <div style={{ fontSize: '0.875rem' }}>{submission.createdAt.toLocaleString('en-GB')}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Page</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Page</div>
             <div style={{ fontSize: '0.875rem' }}>
-              {submission.sourceLabel ?? <span style={{ color: 'var(--color-text-muted)' }}>Unknown</span>}
+              {submission.sourceLabel ?? <span style={{ color: 'var(--color-text-secondary)' }}>Unknown</span>}
             </div>
           </div>
           {submission.gdprConsent && (
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>GDPR</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>GDPR</div>
               <div style={{ fontSize: '0.875rem' }}>Consent given</div>
             </div>
           )}
@@ -176,7 +176,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
                   <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>
                     {msg.senderLabel}
                   </span>
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
                     {msg.createdAt.toLocaleString('en-GB')}
                   </span>
                 </div>

@@ -133,7 +133,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
             style={{
               padding: '0.625rem 1rem', textDecoration: 'none',
               borderBottom: status === tab.value ? '2px solid var(--color-primary)' : '2px solid transparent',
-              color: status === tab.value ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              color: status === tab.value ? 'var(--color-primary)' : 'var(--color-text-secondary)',
               fontWeight: status === tab.value ? 600 : 400,
               fontSize: 'var(--text-base)', whiteSpace: 'nowrap',
             }}
@@ -141,14 +141,14 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
             {tab.label}
           </Link>
         ))}
-        <span style={{ marginLeft: 'auto', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+        <span style={{ marginLeft: 'auto', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
           {total} total
         </span>
       </div>
 
       {selected.size > 0 && (
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--color-surface-alt)', borderRadius: '0.375rem' }}>
-          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{selected.size} selected</span>
+          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>{selected.size} selected</span>
           <button className="btn btn-secondary btn-sm" onClick={() => bulkAction('read')} disabled={busy}>Mark read</button>
           <button className="btn btn-secondary btn-sm" onClick={() => bulkAction('unread')} disabled={busy}>Mark unread</button>
           {status === 'archived' ? (
@@ -163,7 +163,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
       )}
 
       {submissions.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '3rem' }}>
+        <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '3rem' }}>
           No submissions found.
         </div>
       ) : (
@@ -204,7 +204,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                   <td>
                     <Link href={`${base}/m/contact-form/inbox/${s.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <div>{s.name}</div>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>{s.email}</div>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 400, color: 'var(--color-text-secondary)' }}>{s.email}</div>
                     </Link>
                   </td>
                   <td>
@@ -213,14 +213,14 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
                     </Link>
                   </td>
                   <td style={{ fontSize: '0.8125rem' }}>
-                    {s.sourceLabel ?? <span style={{ color: 'var(--color-text-muted)' }}>Unknown</span>}
+                    {s.sourceLabel ?? <span style={{ color: 'var(--color-text-secondary)' }}>Unknown</span>}
                   </td>
                   <td>
                     <span className={`badge ${s.status === 'unread' ? 'badge-info' : s.status === 'archived' ? 'badge-muted' : ''}`}>
                       {s.status}
                     </span>
                   </td>
-                  <td style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                  <td style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
                     {relativeDate(s.createdAt)}
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
@@ -288,7 +288,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
               Previous
             </Link>
           )}
-          <span style={{ lineHeight: '2rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+          <span style={{ lineHeight: '2rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
             Page {page} of {totalPages}
           </span>
           {page < totalPages && (

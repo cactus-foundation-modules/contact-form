@@ -69,7 +69,7 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
         </div>
 
         {signature && (
-          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginBottom: '0.75rem' }}>
             Your signature will be appended below a horizontal rule.
           </p>
         )}
