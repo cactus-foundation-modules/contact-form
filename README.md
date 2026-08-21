@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="module-art.webp" alt="Cactus Contact Form Module" width="640" />
+</p>
+
 # Cactus Contact Form Module
 
 A configurable contact form module for [Cactus](https://github.com/usersaynoso/cactus-foundation).
