@@ -1,7 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { ContactFormPublicConfig } from '@/modules/contact-form/lib/types'
+import {
+  MESSAGE_MIN_LENGTH,
+  validateEmailValue,
+  validateMessageValue,
+} from '@/modules/contact-form/lib/validate'
 
 type Props = {
   // Public subset only - the full config carries notificationEmail/ccEmails,
@@ -60,6 +65,22 @@ const FORM_CSS = `
   border-radius: var(--field-radius, 6px);
 }
 .cactus-contact-form textarea { resize: vertical; min-height: 6rem; }
+/* Wrapper exists so the character hint can sit inside the textarea's bottom
+   right. The reserved bottom padding is unconditional, so the field doesn't
+   change height the moment the hint disappears. */
+.cactus-contact-form .cf-textarea-wrap { position: relative; display: block; }
+.cactus-contact-form .cf-textarea-wrap textarea { display: block; padding-bottom: 1.75rem; }
+.cactus-contact-form .cf-counter {
+  position: absolute;
+  /* Clear of the resize grabber in the very corner. */
+  right: 1.25rem;
+  bottom: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  font-family: var(--field-family, inherit);
+  color: var(--color-text-muted, #6b7280);
+  pointer-events: none;
+}
 .cactus-contact-form input:focus,
 .cactus-contact-form textarea:focus,
 .cactus-contact-form select:focus {
@@ -77,6 +98,7 @@ export default function ContactFormClient({ config, blockId, formTitle, introTex
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const messageHintId = useId()
 
   const style = { padding: getFormPadding(padding) }
 
@@ -93,6 +115,29 @@ export default function ContactFormClient({ config, blockId, formTitle, introTex
     setFields((f) => ({ ...f, [key]: value }))
     setErrors((e) => { const n = { ...e }; delete n[key]; return n })
   }
+
+  // Checks the field the moment focus leaves it, rather than making them press
+  // Send to find out. Nothing typed yet means nothing to complain about - tabbing
+  // through an untouched form shouldn't paint it red before they've had a go.
+  // Submit still catches the empties.
+  function checkOnBlur(
+    key: 'email' | 'message',
+    validate: (value: string) => string | null
+  ) {
+    const value = fields[key]
+    if (!value.trim()) return
+    const error = validate(value)
+    setErrors((e) => {
+      if (error) return { ...e, [key]: error }
+      if (!(key in e)) return e
+      const n = { ...e }
+      delete n[key]
+      return n
+    })
+  }
+
+  const messageLength = fields.message.trim().length
+  const showMessageHint = messageLength < MESSAGE_MIN_LENGTH
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -151,6 +196,7 @@ export default function ContactFormClient({ config, blockId, formTitle, introTex
             type="email"
             value={fields.email}
             onChange={(e) => set('email', e.target.value)}
+            onBlur={() => checkOnBlur('email', validateEmailValue)}
             autoComplete="email"
             required
           />
@@ -200,12 +246,25 @@ export default function ContactFormClient({ config, blockId, formTitle, introTex
 
         <div className="cf-field">
           <label>Message <span aria-hidden>*</span></label>
-          <textarea
-            rows={5}
-            value={fields.message}
-            onChange={(e) => set('message', e.target.value)}
-            required
-          />
+          <div className="cf-textarea-wrap">
+            <textarea
+              rows={5}
+              value={fields.message}
+              onChange={(e) => set('message', e.target.value)}
+              onBlur={() => checkOnBlur('message', validateMessageValue)}
+              aria-describedby={showMessageHint ? messageHintId : undefined}
+              required
+            />
+            {/* Quiet nudge towards the minimum length while they type. Muted, not
+                red - it isn't an error until they leave the field short. */}
+            {showMessageHint && (
+              <span id={messageHintId} className="cf-counter">
+                {messageLength === 0
+                  ? `Minimum ${MESSAGE_MIN_LENGTH} characters`
+                  : `${messageLength} / ${MESSAGE_MIN_LENGTH} characters`}
+              </span>
+            )}
+          </div>
           {errors.message && <p role="alert" className="cf-error">{errors.message}</p>}
         </div>
 

@@ -7,6 +7,27 @@ const EMAIL_RE = /^[^\s@"'<>]+@[^\s@"'<>]+\.[^\s@"'<>]+$/
 
 export type ValidationErrors = Record<string, string>
 
+export const MESSAGE_MIN_LENGTH = 10
+
+// Single-field checks, exported so the browser can run the exact same rule on
+// blur that the server runs on submit. Two copies of "what counts as valid"
+// drift apart eventually; one copy cannot.
+export function validateEmailValue(value: string | null | undefined): string | null {
+  const email = (value ?? '').trim()
+  if (!email) return 'Please enter your email address.'
+  if (!EMAIL_RE.test(email)) return 'Please enter a valid email address.'
+  return null
+}
+
+export function validateMessageValue(value: string | null | undefined): string | null {
+  const message = (value ?? '').trim()
+  if (!message) return 'Please enter a message.'
+  if (message.length < MESSAGE_MIN_LENGTH) {
+    return `Please enter a message (minimum ${MESSAGE_MIN_LENGTH} characters).`
+  }
+  return null
+}
+
 export function validateSubmission(
   data: {
     name?: string | null
@@ -38,12 +59,8 @@ export function validateSubmission(
     }
   }
 
-  const email = (data.email ?? '').trim()
-  if (!email) {
-    errors.email = 'Please enter your email address.'
-  } else if (!EMAIL_RE.test(email)) {
-    errors.email = 'Please enter a valid email address.'
-  }
+  const emailError = validateEmailValue(data.email)
+  if (emailError) errors.email = emailError
 
   if (config.showPhone && config.requirePhone) {
     const phone = (data.phone ?? '').trim()
@@ -60,12 +77,8 @@ export function validateSubmission(
     if (!subject) errors.subject = 'Please enter a subject.'
   }
 
-  const message = (data.message ?? '').trim()
-  if (!message) {
-    errors.message = 'Please enter a message.'
-  } else if (message.length < 10) {
-    errors.message = 'Please enter a message (minimum 10 characters).'
-  }
+  const messageError = validateMessageValue(data.message)
+  if (messageError) errors.message = messageError
 
   if (config.gdprConsentEnabled && !data.gdprConsent) {
     errors.gdprConsent = 'Please confirm your consent to continue.'

@@ -1,6 +1,6 @@
 {
   "name": "contact-form",
-  "version": "0.1.35",
+  "version": "0.1.36",
   "tablePrefix": "cf_",
   "requiresCoreVersion": "0.5.1026",
   "emailTemplates": {
