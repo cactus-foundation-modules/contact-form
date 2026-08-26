@@ -92,7 +92,12 @@ export default async function SubmissionDetailPage({ params }: Props) {
       id: reply.id,
       createdAt: reply.createdAt,
       senderLabel: reply.sentByDisplayName ?? reply.sentByEmail,
-      body: reply.signatureSnapshot ? `${reply.body}\n\n---\n\n${reply.signatureSnapshot}` : reply.body,
+      body: reply.body,
+      // The signature exactly as it was sent. Replies from before signature
+      // kinds existed have only the markdown source, so those are rendered the
+      // way they always were.
+      bodyHtml: reply.signatureSnapshotHtml
+        ?? (reply.signatureSnapshot ? markdownToHtml(reply.signatureSnapshot, { breaks: true }) : undefined),
     })),
     ...threadContributions,
   ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
@@ -185,6 +190,19 @@ export default async function SubmissionDetailPage({ params }: Props) {
                   style={{ fontSize: '0.9375rem' }}
                   dangerouslySetInnerHTML={{ __html: markdownToHtml(msg.body, { breaks: true }) }}
                 />
+                {msg.bodyHtml && (
+                  /* On white with the light scheme pinned: a sent signature
+                     carries its own fixed colours, which an email needs and the
+                     admin's dark mode would fight. */
+                  <div
+                    style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}
+                  >
+                    <div
+                      style={{ padding: '0.75rem', borderRadius: 6, background: '#ffffff', colorScheme: 'light', overflowX: 'auto' }}
+                      dangerouslySetInnerHTML={{ __html: msg.bodyHtml }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>

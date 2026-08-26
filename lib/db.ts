@@ -3,9 +3,11 @@ import type {
   ContactSubmission,
   ContactSubmissionReply,
   ContactUserProfile,
+  SignatureKind,
   SubmissionWithReplies,
   PaginatedSubmissions,
 } from './types'
+import { isSignatureKind } from './types'
 
 // ---------------------------------------------------------------------------
 // Submissions
@@ -116,6 +118,7 @@ export async function getSubmission(id: string): Promise<SubmissionWithReplies |
     prisma.$queryRaw<Array<{
       id: string; created_at: Date; submission_id: string; sent_by_id: string;
       body: string; signature_snapshot: string | null;
+      signature_snapshot_kind: string | null; signature_snapshot_html: string | null;
       display_name: string | null; user_email: string;
     }>>`
       SELECT r.*, u."displayName" as display_name, u."email" as user_email
@@ -138,6 +141,8 @@ export async function getSubmission(id: string): Promise<SubmissionWithReplies |
     sentByEmail: r.user_email,
     body: r.body,
     signatureSnapshot: r.signature_snapshot,
+    signatureSnapshotKind: isSignatureKind(r.signature_snapshot_kind) ? r.signature_snapshot_kind : null,
+    signatureSnapshotHtml: r.signature_snapshot_html,
   }))
 
   return { ...mapRow(submissionRow), replies }
@@ -179,16 +184,24 @@ type CreateReplyData = {
   submissionId: string
   sentById: string
   body: string
+  /** The markdown source, when there was one. Kept for the markdown kind so an
+   *  old reply still renders the way it always did. */
   signatureSnapshot: string | null
+  signatureSnapshotKind: SignatureKind | null
+  /** What went out. Stored rather than re-rendered, because the profile it came
+   *  from is editable and the sent email is not. */
+  signatureSnapshotHtml: string | null
 }
 
 export async function createReply(data: CreateReplyData): Promise<string> {
   const rows = await prisma.$queryRaw<[{ id: string }]>`
     INSERT INTO "cf_contact_submission_replies"
-      ("id", "submission_id", "sent_by_id", "body", "signature_snapshot")
+      ("id", "submission_id", "sent_by_id", "body", "signature_snapshot",
+       "signature_snapshot_kind", "signature_snapshot_html")
     VALUES
       (gen_random_uuid()::text, ${data.submissionId}, ${data.sentById},
-       ${data.body}, ${data.signatureSnapshot})
+       ${data.body}, ${data.signatureSnapshot},
+       ${data.signatureSnapshotKind}, ${data.signatureSnapshotHtml})
     RETURNING "id"
   `
   return rows[0].id
@@ -200,20 +213,66 @@ export async function createReply(data: CreateReplyData): Promise<string> {
 
 export async function getUserProfile(userId: string): Promise<ContactUserProfile | null> {
   const rows = await prisma.$queryRaw<Array<{
-    id: string; user_id: string; signature: string | null; created_at: Date; updated_at: Date;
+    id: string; user_id: string;
+    signature_kind: string | null;
+    signature: string | null; signature_html: string | null; signature_puck: unknown;
+    full_name: string | null; job_title: string | null;
+    phone_display: string | null; phone_e164: string | null;
+    created_at: Date; updated_at: Date;
   }>>`SELECT * FROM "cf_user_profiles" WHERE "user_id" = ${userId} LIMIT 1`
 
   const r = rows[0]
   if (!r) return null
-  return { id: r.id, userId: r.user_id, signature: r.signature, createdAt: r.created_at, updatedAt: r.updated_at }
+  return {
+    id: r.id,
+    userId: r.user_id,
+    signatureKind: isSignatureKind(r.signature_kind) ? r.signature_kind : 'markdown',
+    signature: r.signature,
+    signatureHtml: r.signature_html,
+    signaturePuck: r.signature_puck ?? null,
+    fullName: r.full_name,
+    jobTitle: r.job_title,
+    phoneDisplay: r.phone_display,
+    phoneE164: r.phone_e164,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }
 }
 
-export async function upsertUserProfile(userId: string, signature: string | null): Promise<void> {
+export type UserProfilePatch = {
+  signatureKind: SignatureKind
+  signature: string | null
+  signatureHtml: string | null
+  signaturePuck: unknown
+  fullName: string | null
+  jobTitle: string | null
+  phoneDisplay: string | null
+  phoneE164: string | null
+}
+
+export async function upsertUserProfile(userId: string, patch: UserProfilePatch): Promise<void> {
+  // Prisma hands a plain JS value straight to a jsonb parameter as text unless
+  // it is told otherwise, so the builder data is stringified here and cast in
+  // the statement. Null stays null rather than becoming the string 'null'.
+  const puck = patch.signaturePuck == null ? null : JSON.stringify(patch.signaturePuck)
   await prisma.$executeRaw`
-    INSERT INTO "cf_user_profiles" ("id", "user_id", "signature")
-    VALUES (gen_random_uuid()::text, ${userId}, ${signature})
+    INSERT INTO "cf_user_profiles"
+      ("id", "user_id", "signature_kind", "signature", "signature_html", "signature_puck",
+       "full_name", "job_title", "phone_display", "phone_e164")
+    VALUES
+      (gen_random_uuid()::text, ${userId}, ${patch.signatureKind}, ${patch.signature},
+       ${patch.signatureHtml}, ${puck}::jsonb,
+       ${patch.fullName}, ${patch.jobTitle}, ${patch.phoneDisplay}, ${patch.phoneE164})
     ON CONFLICT ("user_id") DO UPDATE
-    SET "signature" = ${signature}, "updated_at" = CURRENT_TIMESTAMP
+    SET "signature_kind" = ${patch.signatureKind},
+        "signature"      = ${patch.signature},
+        "signature_html" = ${patch.signatureHtml},
+        "signature_puck" = ${puck}::jsonb,
+        "full_name"      = ${patch.fullName},
+        "job_title"      = ${patch.jobTitle},
+        "phone_display"  = ${patch.phoneDisplay},
+        "phone_e164"     = ${patch.phoneE164},
+        "updated_at"     = CURRENT_TIMESTAMP
   `
 }
 

@@ -1,7 +1,61 @@
 import { sendEmail } from '@/lib/email/index'
-import { renderEmailTemplate } from '@/lib/email/render'
+import { renderEmailTemplate, getSiteEmailContext, type SiteEmailContext } from '@/lib/email/render'
+import { getEmailPalette, resolveEmailWrapper, wrapEmailHtml, type EmailPalette, type EmailWrapperLayout } from '@/lib/email/wrapper'
 import { markdownToHtml, markdownToPlainText } from '@/lib/sanitize'
 import type { ContactFormConfig, ContactSubmission } from './types'
+import type { RenderedSignature } from './signature'
+
+// ---------------------------------------------------------------------------
+// The site's email design
+// ---------------------------------------------------------------------------
+
+// The owner notification goes out through renderEmailTemplate, which wraps it in
+// the site's design on its way. The two emails a VISITOR receives - the auto
+// reply and the reply somebody types in the inbox - did not: they are free text
+// rather than a registered template, so they went out as bare markdown HTML with
+// no logo, no colours and no footer, which is not what the rest of the site's
+// email looks like.
+//
+// They use the site's default wrapper - the highest-priority published one, the
+// same resolution core uses when a template names none. Deliberately not a
+// setting: an owner who wants their reply email to look different from their
+// order email can already say so by publishing a second wrapper and promoting
+// it, and a per-form picker would only let one contact form disagree with
+// another about what the whole site looks like.
+
+export type ContactEmailContext = {
+  palette: EmailPalette
+  layout: EmailWrapperLayout | null
+  site: SiteEmailContext
+}
+
+/** Fetched once per send and threaded through, because the signature renderer
+ * needs the same palette and site values and neither read is free. */
+export async function getContactEmailContext(): Promise<ContactEmailContext> {
+  const [palette, layout, site] = await Promise.all([
+    getEmailPalette(),
+    resolveEmailWrapper(null),
+    getSiteEmailContext(),
+  ])
+  return { palette, layout, site }
+}
+
+function wrapForVisitor(bodyHtml: string, subject: string, ctx: ContactEmailContext): string {
+  return wrapEmailHtml({
+    bodyHtml,
+    subject,
+    vars: {
+      siteName: ctx.site.siteName,
+      siteUrl: ctx.site.siteUrl,
+      logoUrl: ctx.site.logoUrl,
+      year: ctx.site.year,
+    },
+    palette: ctx.palette,
+    // With no wrapper published this still returns a tidy centred card, which is
+    // a better floor than the bare body these two used to send.
+    layout: ctx.layout,
+  })
+}
 
 // Escape every HTML-significant character so a submitted field can never inject
 // markup into the owner notification email. Must run at the point of
@@ -108,33 +162,50 @@ export async function sendAutoReply(
     .replace(/\{\{name\}\}/g, submission.name)
     .replace(/\{\{email\}\}/g, submission.email)
 
+  const subject = 'Thanks for getting in touch'
+  const ctx = await getContactEmailContext()
+
   await sendEmail({
     to: submission.email,
-    subject: 'Thanks for getting in touch',
-    html: markdownToHtml(body, { breaks: true }),
+    subject,
+    html: wrapForVisitor(markdownToHtml(body, { breaks: true }), subject, ctx),
+    // The plain-text alternative stays the message alone. A wrapper is a
+    // picture frame; there is nothing in it a text-only reader wants.
     text: markdownToPlainText(body, { breaks: true }),
   })
 }
 
+/** The rule between a reply and its signature. Inline-styled rather than a bare
+ * <hr>: Outlook draws its own three-dimensional default otherwise, which looks
+ * like a mistake next to a designed signature. */
+const SIGNATURE_RULE =
+  '<hr style="border:0;border-top:1px solid #d8d6d1;margin:24px 0 16px;height:1px;" />'
+
 export async function sendReply(opts: {
   submission: ContactSubmission
   replyBody: string
-  signature: string | null
+  /** Already rendered by lib/signature.ts - this function no longer knows or
+   *  cares which kind it was authored in. Concatenating the two as markdown, as
+   *  it once did, could only ever have worked for the markdown kind. */
+  signature: RenderedSignature | null
   fromEmail: string
+  /** Shared with the signature render, so one reply reads the site config once
+   *  rather than twice. */
+  emailContext: ContactEmailContext
 }): Promise<void> {
-  const { submission, replyBody, signature } = opts
+  const { submission, replyBody, signature, emailContext } = opts
 
-  const combined = signature
-    ? `${replyBody}\n\n${signature}`
-    : replyBody
+  const bodyHtml = markdownToHtml(replyBody, { breaks: true })
+  const bodyText = markdownToPlainText(replyBody, { breaks: true })
 
   const emailSubject = submission.subject ? `Re: ${submission.subject}` : 'Re: Your contact form message'
+  const inner = signature ? `${bodyHtml}${SIGNATURE_RULE}${signature.html}` : bodyHtml
 
   await sendEmail({
     to: submission.email,
     replyTo: opts.fromEmail,
     subject: emailSubject,
-    html: markdownToHtml(combined, { breaks: true }),
-    text: markdownToPlainText(combined, { breaks: true }),
+    html: wrapForVisitor(inner, emailSubject, emailContext),
+    text: signature ? `${bodyText}\n\n---\n\n${signature.text}` : bodyText,
   })
 }

@@ -6,7 +6,8 @@ import { errorResponse } from '@/lib/utils'
 import { prisma } from '@/lib/db/prisma'
 import { getSubmission, createReply, getUserProfile, updateSubmission } from '@/modules/contact-form/lib/db'
 import { syncMessagesNotification } from '@/modules/contact-form/lib/notify'
-import { sendReply } from '@/modules/contact-form/lib/email'
+import { sendReply, getContactEmailContext } from '@/modules/contact-form/lib/email'
+import { renderSignature, signatureSnapshot } from '@/modules/contact-form/lib/signature'
 
 const Body = z.object({
   body: z.string().min(1, 'Reply body is required.').max(50000),
@@ -27,9 +28,17 @@ export async function POST(
   const submission = await getSubmission(id)
   if (!submission) return errorResponse('Submission not found', 404)
 
-  // Fetch sender's signature
+  // Fetch and render the sender's signature. Whichever kind they authored it
+  // in, what leaves here is one pair of html/text.
   const profile = await getUserProfile(user.id)
-  const signature = profile?.signature ?? null
+  // One read of the site's palette, wrapper and name, shared by the signature
+  // render and the wrapper the reply goes out in.
+  const emailContext = await getContactEmailContext()
+  const signature = await renderSignature(
+    profile,
+    { displayName: user.displayName ?? null, email: user.email },
+    emailContext,
+  )
 
   // Send the reply email first - only persist the reply once it's actually
   // sent, so a failed send doesn't leave a phantom reply in the thread that
@@ -45,6 +54,7 @@ export async function POST(
       replyBody:  parsed.data.body,
       signature,
       fromEmail:  siteConfig?.emailFromAddress ?? '',
+      emailContext,
     })
   } catch (err) {
     console.error('[contact-form] Reply email failed:', err)
@@ -53,10 +63,10 @@ export async function POST(
 
   // Store reply
   const replyId = await createReply({
-    submissionId:      id,
-    sentById:          user.id,
-    body:              parsed.data.body,
-    signatureSnapshot: signature,
+    submissionId: id,
+    sentById:     user.id,
+    body:         parsed.data.body,
+    ...signatureSnapshot(profile, signature),
   })
 
   // Mark submission as read

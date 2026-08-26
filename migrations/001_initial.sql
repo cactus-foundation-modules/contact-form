@@ -54,7 +54,12 @@ CREATE TABLE "cf_contact_submission_replies" (
     "submission_id"         TEXT        NOT NULL,
     "sent_by_id"            TEXT        NOT NULL,
     "body"                  TEXT        NOT NULL,
-    "signature_snapshot"    TEXT,
+    -- The signature as it stood on the day. `signature_snapshot` is the
+    -- markdown source (NULL kind = markdown, for replies predating 002);
+    -- `signature_snapshot_html` is what the recipient actually saw.
+    "signature_snapshot"        TEXT,
+    "signature_snapshot_kind"   TEXT,
+    "signature_snapshot_html"   TEXT,
 
     CONSTRAINT "cf_contact_submission_replies_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "cf_contact_submission_replies_submission_fk"
@@ -74,7 +79,18 @@ CREATE TABLE "cf_user_profiles" (
     "created_at"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "user_id"       TEXT        NOT NULL,
+    -- markdown | html | puck. `signature` holds the markdown one whatever the
+    -- kind, so switching away and back does not lose it.
+    "signature_kind" TEXT       NOT NULL DEFAULT 'markdown',
     "signature"     TEXT,
+    "signature_html" TEXT,
+    "signature_puck" JSONB,
+    -- Merged into an HTML or block-built signature as {{FULL_NAME}} and friends,
+    -- so one design serves everybody who replies from the inbox.
+    "full_name"     TEXT,
+    "job_title"     TEXT,
+    "phone_display" TEXT,
+    "phone_e164"    TEXT,
 
     CONSTRAINT "cf_user_profiles_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "cf_user_profiles_user_id_unique" UNIQUE ("user_id"),

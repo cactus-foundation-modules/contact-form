@@ -15,19 +15,19 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
   const router = useRouter()
   const adminPath = useAdminPath()
   const [body, setBody] = useState('')
-  const [signature, setSignature] = useState<string | null>(null)
+  // The signature as it will actually be sent, rendered server-side. Held as
+  // HTML rather than as its source because it may not have a markdown source at
+  // all any more - it could be pasted markup or a stack of email blocks.
+  const [signatureHtml, setSignatureHtml] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/m/contact-form/admin/signature')
       .then((r) => r.json())
-      .then((data: { signature: string | null }) => setSignature(data.signature))
+      .then((data: { renderedHtml: string | null }) => setSignatureHtml(data.renderedHtml))
+      .catch(() => {})
   }, [])
-
-  const previewContent = signature
-    ? `${body}\n\n---\n\n${signature}`
-    : body
 
   async function send(e: React.FormEvent) {
     e.preventDefault()
@@ -64,14 +64,22 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
             onChange={setBody}
             rows={6}
             placeholder="Write your reply here... (markdown supported)"
-            previewContent={previewContent}
           />
         </div>
 
-        {signature && (
-          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', marginBottom: '0.75rem' }}>
-            Your signature will be appended below a horizontal rule.
-          </p>
+        {signatureHtml && (
+          <div style={{ marginBottom: '0.75rem' }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)', margin: '0 0 0.5rem' }}>
+              Your signature goes below a dividing line at the foot of this reply:
+            </p>
+            {/* Deliberately on white with the light scheme pinned: this is
+                standing in for an inbox, and an email signature carries its own
+                fixed colours rather than the admin's tokens. */}
+            <div
+              style={{ padding: '0.75rem', borderRadius: 6, border: '1px solid var(--color-border)', background: '#ffffff', colorScheme: 'light', overflowX: 'auto' }}
+              dangerouslySetInnerHTML={{ __html: signatureHtml }}
+            />
+          </div>
         )}
 
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
