@@ -296,3 +296,81 @@ export async function pruneExpiredSubmissionsByBlock(blockId: string, retentionD
   if (count > 0) console.log(`[contact-form] Pruned ${count} expired submission(s) for block ${blockId}`)
   return count
 }
+
+// ---------------------------------------------------------------------------
+// Conversation listing
+//
+// The same enquiries the inbox screen shows, in the shape anything that merges
+// several channels into one list needs: newest activity first, where "activity"
+// counts a reply as well as the enquiry itself. The screen orders by when the
+// enquiry arrived, which is right for a list of enquiries and wrong for a list
+// of conversations - a thread somebody answered this morning belongs at the top.
+// ---------------------------------------------------------------------------
+
+export type SubmissionSummaryRow = ContactSubmission & {
+  /** The enquiry, or its newest reply, whichever is later. */
+  lastActivityAt: Date
+  replyCount: number
+}
+
+function mapSummary(r: Record<string, unknown>): SubmissionSummaryRow {
+  return {
+    ...mapRow(r),
+    lastActivityAt: (r.last_activity_at as Date) ?? (r.created_at as Date),
+    replyCount: Number(r.reply_count ?? 0),
+  }
+}
+
+const SUMMARY_SELECT = `
+  SELECT s.*,
+         GREATEST(s."created_at", COALESCE(r."last_reply_at", s."created_at")) AS last_activity_at,
+         COALESCE(r."reply_count", 0) AS reply_count
+    FROM "cf_contact_submissions" s
+    LEFT JOIN LATERAL (
+      SELECT MAX(rp."created_at") AS last_reply_at, COUNT(*) AS reply_count
+        FROM "cf_contact_submission_replies" rp
+       WHERE rp."submission_id" = s."id"
+    ) r ON true`
+
+/** Enquiries by newest activity, optionally only those touched since a date.
+ *  `before` pages backwards through them - a timestamp cursor rather than an
+ *  offset, so a new enquiry arriving mid-page cannot make one repeat. */
+export async function listSubmissionSummaries(opts: {
+  since?: Date
+  before?: Date
+  limit: number
+}): Promise<SubmissionSummaryRow[]> {
+  const limit = Math.max(1, Math.min(200, opts.limit))
+  const since = opts.since ?? null
+  const before = opts.before ?? null
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+    `${SUMMARY_SELECT}
+      WHERE ($1::timestamp IS NULL OR GREATEST(s."created_at", COALESCE(r."last_reply_at", s."created_at")) > $1::timestamp)
+        AND ($2::timestamp IS NULL OR GREATEST(s."created_at", COALESCE(r."last_reply_at", s."created_at")) < $2::timestamp)
+      ORDER BY last_activity_at DESC, s."id" DESC
+      LIMIT $3`,
+    since,
+    before,
+    limit,
+  )
+  return rows.map(mapSummary)
+}
+
+/** Every enquiry from any of these addresses, newest activity first. Used when
+ *  something wants one person's whole history rather than a page of the list. */
+export async function submissionSummariesForEmails(
+  emails: string[],
+  limit = 50,
+): Promise<SubmissionSummaryRow[]> {
+  const cleaned = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))]
+  if (cleaned.length === 0) return []
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+    `${SUMMARY_SELECT}
+      WHERE lower(s."email") = ANY($1::text[])
+      ORDER BY last_activity_at DESC, s."id" DESC
+      LIMIT $2`,
+    cleaned,
+    Math.max(1, Math.min(200, limit)),
+  )
+  return rows.map(mapSummary)
+}

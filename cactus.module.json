@@ -1,8 +1,8 @@
 {
   "name": "contact-form",
-  "version": "0.1.37",
+  "version": "0.1.38",
   "tablePrefix": "cf_",
-  "requiresCoreVersion": "0.5.1329",
+  "requiresCoreVersion": "0.5.1383",
   "emailTemplates": {
     "groupLabel": "Contact form",
     "import": "./lib/email-templates",
@@ -24,6 +24,15 @@
       "permission": "contact.view",
       "import": "./components/admin/InboxPanel",
       "component": "ContactFormInboxPanel"
+    },
+    {
+      "point": "core.conversation-provider",
+      "id": "contact-form",
+      "label": "Contact form",
+      "permission": "contact.view",
+      "serverOnly": true,
+      "import": "./lib/conversation-provider",
+      "component": "contactFormConversationProvider"
     }
   ],
   "requiredEnvVars": [],
