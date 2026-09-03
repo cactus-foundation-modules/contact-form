@@ -1,4 +1,5 @@
-import { formatInSiteTimezone, getSiteTimezone } from '@/lib/config/timezone'
+import { formatInSiteTimezone } from '@/lib/config/timezone'
+import { getSiteTimezone } from '@/lib/config/timezone.server'
 import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { prisma } from '@/lib/db/prisma'
