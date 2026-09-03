@@ -1,3 +1,4 @@
+import { formatInSiteTimezone, getSiteTimezone } from '@/lib/config/timezone'
 import { getSessionFromCookie } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/permissions/check'
 import { prisma } from '@/lib/db/prisma'
@@ -20,6 +21,9 @@ type Props = { params: Promise<{ id: string }> }
 type ExtensionPointEntry = { point: string; id: string; permission?: string }
 
 export default async function SubmissionDetailPage({ params }: Props) {
+  // Server-rendered, so the machine's own clock is UTC. Every stamp on this
+  // page is read in the site's zone instead.
+  const timezone = await getSiteTimezone()
   const user = await getSessionFromCookie()
   if (!user) return null
   if (!await hasPermission(user, 'contact.view')) {
@@ -140,7 +144,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
           )}
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Received</div>
-            <div style={{ fontSize: '0.875rem' }}>{submission.createdAt.toLocaleString('en-GB')}</div>
+            <div style={{ fontSize: '0.875rem' }}>{formatInSiteTimezone(submission.createdAt, timezone, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Page</div>
@@ -182,7 +186,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
                     {msg.senderLabel}
                   </span>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                    {msg.createdAt.toLocaleString('en-GB')}
+                    {formatInSiteTimezone(msg.createdAt, timezone, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 <div
