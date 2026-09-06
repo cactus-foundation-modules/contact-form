@@ -57,6 +57,14 @@ function toSummary(row: SubmissionSummaryRow): ConversationSummary {
     // Admin-root relative, no leading slash: the admin path is per site and
     // only the page rendering the link knows what it is.
     href: `m/contact-form/inbox/${row.id}`,
+    // Where the form said this belonged, handed back exactly as it was given.
+    // Null on every site that has nowhere to deliver to, which is every site
+    // with no module publishing destinations.
+    destinationId: row.destinationId,
+    // Which form it was typed into, in the owner's own words. A consumer with
+    // several channels on one screen has no other way to tell one form's
+    // enquiries from another's.
+    sourceLabel: row.formTitle,
   }
 }
 

@@ -27,6 +27,8 @@ type CreateSubmissionData = {
   sourceId?: string | null
   sourceBlockId?: string | null
   sourceLabel?: string | null
+  formTitle?: string | null
+  destinationId?: string | null
 }
 
 export async function createSubmission(data: CreateSubmissionData): Promise<string> {
@@ -34,13 +36,15 @@ export async function createSubmission(data: CreateSubmissionData): Promise<stri
     INSERT INTO "cf_contact_submissions"
       ("id", "name", "email", "phone", "company", "subject", "message",
        "ip_address", "user_agent", "gdpr_consent", "status",
-       "source_type", "source_id", "source_block_id", "source_label")
+       "source_type", "source_id", "source_block_id", "source_label",
+       "form_title", "destination_id")
     VALUES
       (gen_random_uuid()::text, ${data.name}, ${data.email}, ${data.phone ?? null},
        ${data.company ?? null}, ${data.subject ?? null}, ${data.message},
        ${data.ipAddress ?? null}, ${data.userAgent ?? null}, ${data.gdprConsent}::boolean, 'unread',
        ${data.sourceType ?? null}, ${data.sourceId ?? null},
-       ${data.sourceBlockId ?? null}, ${data.sourceLabel ?? null})
+       ${data.sourceBlockId ?? null}, ${data.sourceLabel ?? null},
+       ${data.formTitle ?? null}, ${data.destinationId ?? null})
     RETURNING "id"
   `
   return rows[0].id
@@ -65,6 +69,8 @@ function mapRow(r: Record<string, unknown>): ContactSubmission {
     sourceId: (r.source_id as string | null) ?? null,
     sourceBlockId: (r.source_block_id as string | null) ?? null,
     sourceLabel: (r.source_label as string | null) ?? null,
+    formTitle: (r.form_title as string | null) ?? null,
+    destinationId: (r.destination_id as string | null) ?? null,
   }
 }
 

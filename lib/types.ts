@@ -1,4 +1,13 @@
 export type ContactFormConfig = {
+  /** The form's own name. Kept apart from whether it is DRAWN: a form under a
+   *  heading of its own still needs a name for the enquiries it produces. */
+  formTitle: string | null
+  showFormTitle: boolean
+  /** Where this form's enquiries should be delivered, as an id published
+   *  through core's message-destination seam. Opaque here on purpose - this
+   *  module stores it and hands it back, and never asks what it points at.
+   *  Null on every site with no module publishing any. */
+  destinationId: string | null
   showPhone: boolean
   showCompany: boolean
   showSubject: boolean
@@ -51,6 +60,12 @@ export type ContactSubmission = {
   sourceId: string | null
   sourceBlockId: string | null
   sourceLabel: string | null
+  /** The form's name as it read when this arrived, and where that form said
+   *  its enquiries belonged. Both settled on arrival rather than looked up
+   *  later: a form gets renamed and re-pointed, and last March's enquiry came
+   *  from the form as it was last March. */
+  formTitle: string | null
+  destinationId: string | null
 }
 
 export type ContactSubmissionReply = {

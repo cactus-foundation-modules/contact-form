@@ -14,6 +14,11 @@ type Props = {
   config: ContactFormPublicConfig
   blockId: string
   formTitle?: string
+  /** Whether the title is drawn at all. A form under its own heading on the
+   *  page, or inside a panel that already says what it is, wants the words
+   *  once rather than twice - and the title is still worth having set, because
+   *  it is what names this form everywhere else on the site. */
+  showFormTitle?: boolean
   introText?: string
   submitLabel?: string
   padding?: string
@@ -91,29 +96,29 @@ const FORM_CSS = `
 .cactus-contact-form .cf-error { margin: 0; font-size: 0.8125rem; color: var(--color-danger, #dc2626); }
 `
 
-export default function ContactFormClient({ config, blockId, formTitle, introText, submitLabel, padding }: Props) {
-  const [fields, setFields] = useState({
-    name: '', email: '', phone: '', company: '', subject: '', message: '', gdprConsent: false,
-  })
+const EMPTY_FIELDS = {
+  name: '', email: '', phone: '', company: '', subject: '', message: '', gdprConsent: false,
+}
+
+export default function ContactFormClient({
+  config, blockId, formTitle, showFormTitle, introText, submitLabel, padding,
+}: Props) {
+  const [fields, setFields] = useState(EMPTY_FIELDS)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [sent, setSent] = useState(false)
   const messageHintId = useId()
 
   const style = { padding: getFormPadding(padding) }
-
-  if (submitted) {
-    const msg = config.successMessage || 'Thank you for getting in touch!'
-    return (
-      <div className="cactus-contact-form" style={style}>
-        <div role="alert" className="alert alert-success">{msg}</div>
-      </div>
-    )
-  }
+  const titleShown = showFormTitle !== false && !!formTitle
 
   function set(key: keyof typeof fields, value: string | boolean) {
     setFields((f) => ({ ...f, [key]: value }))
     setErrors((e) => { const n = { ...e }; delete n[key]; return n })
+    // They are writing again, so the last message has been read and had its
+    // moment. Leaving "thank you for getting in touch" sitting over a
+    // half-typed second enquiry reads as though this one has been sent too.
+    setSent(false)
   }
 
   // Checks the field the moment focus leaves it, rather than making them press
@@ -160,7 +165,12 @@ export default function ContactFormClient({ config, blockId, formTitle, introTex
     const data = await res.json().catch(() => ({})) as { success?: boolean; errors?: Record<string, string> }
 
     if (res.ok && data.success) {
-      setSubmitted(true)
+      // The form stays where it is, emptied. Swapping it for the thank-you
+      // note meant somebody with a second thing to ask had to reload the page
+      // to get it back, and on a page whose only purpose is the form it left
+      // them looking at one sentence in an acre of white.
+      setFields(EMPTY_FIELDS)
+      setSent(true)
     } else {
       setErrors(data.errors ?? { _form: 'Something went wrong. Please try again.' })
     }
@@ -170,8 +180,16 @@ export default function ContactFormClient({ config, blockId, formTitle, introTex
   return (
     <div className="cactus-contact-form" style={style}>
       <style dangerouslySetInnerHTML={{ __html: FORM_CSS }} />
-      {formTitle && <h2 style={{ marginBottom: introText ? '0.5rem' : '1.25rem' }}>{formTitle}</h2>}
+      {titleShown && <h2 style={{ marginBottom: introText ? '0.5rem' : '1.25rem' }}>{formTitle}</h2>}
       {introText && <p style={{ marginBottom: '1.25rem', color: 'var(--color-text-muted)' }}>{introText}</p>}
+
+      {/* Polite rather than assertive: the form is still on the screen and
+          still theirs to use, so this is news rather than an interruption. */}
+      {sent && (
+        <div role="status" className="alert alert-success" style={{ marginBottom: '1rem' }}>
+          {config.successMessage || 'Thank you for getting in touch!'}
+        </div>
+      )}
 
       {errors._form && (
         <div role="alert" className="alert alert-danger" style={{ marginBottom: '1rem' }}>{errors._form}</div>

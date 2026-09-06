@@ -214,6 +214,11 @@ export async function POST(request: NextRequest) {
     sourceId,
     sourceBlockId: blockId,
     sourceLabel,
+    // Both taken from the form's saved settings as they read right now, and
+    // written down here rather than looked up later - a form gets renamed and
+    // re-pointed, and this enquiry came from the form as it stands today.
+    formTitle: config.formTitle,
+    destinationId: config.destinationId,
   })
 
   // Keep the rolling "N unread messages" admin notification in step with the inbox.

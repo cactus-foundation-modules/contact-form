@@ -35,6 +35,12 @@ CREATE TABLE "cf_contact_submissions" (
     "source_block_id"   TEXT,
     "source_label"      TEXT,
 
+    -- The form's own name, as it read when this arrived, and where the form
+    -- said its enquiries should be delivered. See 003_form_delivery.sql, which
+    -- adds both to sites installed before they existed.
+    "form_title"        TEXT,
+    "destination_id"    TEXT,
+
     CONSTRAINT "cf_contact_submissions_pkey" PRIMARY KEY ("id")
 );
 

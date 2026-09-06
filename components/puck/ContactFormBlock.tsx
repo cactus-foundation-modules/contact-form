@@ -1,4 +1,5 @@
 import ContactFormClient, { getFormPadding } from './ContactFormClient'
+import type { MessageDestinationGroup } from '@/lib/conversations/types'
 import type { ContactFormConfig, ContactFormPublicConfig } from '@/modules/contact-form/lib/types'
 
 // Cached fetch so resolveFields doesn't refetch on every panel keystroke
@@ -10,6 +11,49 @@ async function fetchAuthConfig(): Promise<{ emailConfigured: boolean; turnstileC
   const data = await res.json() as { emailConfigured: boolean; turnstileConfigured: boolean }
   _authConfigCache = { data, expires: now + 60_000 }
   return data
+}
+
+// Same cache and the same reason: resolveFields runs on every keystroke in the
+// panel, and this one asks every module on the site what it can deliver to.
+let _destinationCache: { data: MessageDestinationGroup[]; expires: number } | null = null
+async function fetchDestinations(): Promise<MessageDestinationGroup[]> {
+  const now = Date.now()
+  if (_destinationCache && now < _destinationCache.expires) return _destinationCache.data
+  let groups: MessageDestinationGroup[] = []
+  try {
+    const res = await fetch('/api/admin/message-destinations')
+    if (res.ok) {
+      const body = await res.json() as { groups?: MessageDestinationGroup[] }
+      groups = Array.isArray(body.groups) ? body.groups : []
+    }
+  } catch {
+    // A site with no answer to the question is a site with no inbox module, as
+    // far as this panel is concerned. The field simply is not offered.
+  }
+  _destinationCache = { data: groups, expires: now + 60_000 }
+  return groups
+}
+
+/** The delivery field, or nothing at all.
+ *
+ *  Nothing is the right answer on a site with no module that holds inboxes:
+ *  a select whose only entry is "nowhere" is a question with no answer, and
+ *  every contact form ever built worked perfectly well without being asked it.
+ *  The label a destination carries is its own module's, never one written here. */
+function destinationField(groups: MessageDestinationGroup[]) {
+  const options = [
+    { value: '', label: 'Nowhere - just the inbox on this site' },
+    ...groups.flatMap((group) => group.destinations.map((destination) => ({
+      value: destination.id,
+      label: groups.length > 1 ? `${group.label}: ${destination.label}` : destination.label,
+    }))),
+  ]
+  if (options.length === 1) return null
+  return {
+    type: 'select' as const,
+    label: 'Deliver enquiries to',
+    options,
+  }
 }
 
 function EmailNotConfiguredNotice() {
@@ -46,6 +90,7 @@ function TurnstileUnavailableField() {
 export type ContactFormBlockProps = {
   // Layout
   formTitle?: string
+  showFormTitle?: string
   introText?: string
   submitLabel?: string
   padding?: string
@@ -73,12 +118,17 @@ export type ContactFormBlockProps = {
   gdprConsentLabel?: string
   // Retention
   retentionDays?: number
+  // Delivery
+  destinationId?: string
   // Success
   successMessage?: string
 }
 
 export function blockPropsToConfig(props: ContactFormBlockProps): ContactFormConfig {
   return {
+    showFormTitle:        props.showFormTitle !== 'no',
+    formTitle:            props.formTitle?.trim() || null,
+    destinationId:        props.destinationId?.trim() || null,
     showPhone:            props.showPhone !== 'no',
     showCompany:          props.showCompany === 'yes',
     showSubject:          props.showSubject !== 'no',
@@ -131,6 +181,7 @@ export async function ContactFormBlockRsc(props: ContactFormBlockProps & { id?: 
       config={config}
       blockId={blockId}
       formTitle={props.formTitle}
+      showFormTitle={full.showFormTitle}
       introText={props.introText}
       submitLabel={props.submitLabel}
       padding={props.padding}
@@ -141,10 +192,10 @@ export async function ContactFormBlockRsc(props: ContactFormBlockProps & { id?: 
 // Editor preview version: synchronous, no async work.
 // Shown inside the Puck editor drag-and-drop canvas.
 export function ContactFormBlock(props: ContactFormBlockProps) {
-  const { formTitle, introText, padding } = props
+  const { formTitle, showFormTitle, introText, padding } = props
   return (
     <div style={{ padding: getFormPadding(padding) }}>
-      {formTitle && <h2 style={{ marginBottom: introText ? '0.5rem' : '1rem' }}>{formTitle}</h2>}
+      {showFormTitle !== 'no' && formTitle && <h2 style={{ marginBottom: introText ? '0.5rem' : '1rem' }}>{formTitle}</h2>}
       {introText && <p style={{ marginBottom: '1rem', color: 'var(--color-text-muted)' }}>{introText}</p>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', opacity: 0.6, pointerEvents: 'none' }}>
         <div style={{ height: '2.25rem', background: 'var(--color-border)', borderRadius: '0.375rem' }} />
@@ -161,6 +212,10 @@ export const contactFormPuckComponent = {
   fields: {
     // Layout
     formTitle:      { type: 'text' as const,     label: 'Form title' },
+    showFormTitle: {
+      type: 'select' as const, label: 'Show the form title',
+      options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }],
+    },
     introText:      { type: 'textarea' as const, label: 'Intro text' },
     submitLabel:    { type: 'text' as const,     label: 'Submit button label' },
     padding: {
@@ -248,6 +303,7 @@ export const contactFormPuckComponent = {
   },
   defaultProps: {
     formTitle:            'Get in touch',
+    showFormTitle:        'yes',
     introText:            '',
     submitLabel:          'Send Message',
     padding:              'default',
@@ -270,17 +326,23 @@ export const contactFormPuckComponent = {
     gdprConsentEnabled:   'no',
     gdprConsentLabel:     '',
     retentionDays:        0,
+    destinationId:        '',
     successMessage:       '',
   },
   async resolveFields(_data: ContactFormBlockProps, { fields }: { fields: any }) {
-    const config = await fetchAuthConfig()
+    const [config, destinationGroups] = await Promise.all([fetchAuthConfig(), fetchDestinations()])
+    // Where enquiries are delivered is only a question on a site that has
+    // somewhere to deliver them to, so the field is built from the answer
+    // rather than declared above and left empty.
+    const destination = destinationField(destinationGroups)
+    const withDestination = destination ? { ...fields, destinationId: destination } : fields
     if (!config.emailConfigured) {
-      return { _setupNotice: { type: 'custom' as const, render: EmailNotConfiguredNotice }, ...fields }
+      return { _setupNotice: { type: 'custom' as const, render: EmailNotConfiguredNotice }, ...withDestination }
     }
     if (!config.turnstileConfigured) {
-      return { ...fields, turnstileEnabled: { type: 'custom' as const, render: TurnstileUnavailableField } }
+      return { ...withDestination, turnstileEnabled: { type: 'custom' as const, render: TurnstileUnavailableField } }
     }
-    return fields
+    return withDestination
   },
   render: ContactFormBlock,
 }
