@@ -165,10 +165,13 @@ export default function ContactFormClient({
     const data = await res.json().catch(() => ({})) as { success?: boolean; errors?: Record<string, string> }
 
     if (res.ok && data.success) {
-      // The form stays where it is, emptied. Swapping it for the thank-you
-      // note meant somebody with a second thing to ask had to reload the page
-      // to get it back, and on a page whose only purpose is the form it left
-      // them looking at one sentence in an acre of white.
+      // The form stays where it is, emptied, and the thank-you takes the Send
+      // button's place. Swapping the whole form for the note meant somebody
+      // with a second thing to ask had to reload the page to get it back, and
+      // on a page whose only purpose is the form it left them looking at one
+      // sentence in an acre of white. Putting it where the button was answers
+      // the press they just made, in the spot they were already looking at,
+      // and quietly stops them sending the same thing twice.
       setFields(EMPTY_FIELDS)
       setSent(true)
     } else {
@@ -182,14 +185,6 @@ export default function ContactFormClient({
       <style dangerouslySetInnerHTML={{ __html: FORM_CSS }} />
       {titleShown && <h2 style={{ marginBottom: introText ? '0.5rem' : '1.25rem' }}>{formTitle}</h2>}
       {introText && <p style={{ marginBottom: '1.25rem', color: 'var(--color-text-muted)' }}>{introText}</p>}
-
-      {/* Polite rather than assertive: the form is still on the screen and
-          still theirs to use, so this is news rather than an interruption. */}
-      {sent && (
-        <div role="status" className="alert alert-success" style={{ marginBottom: '1rem' }}>
-          {config.successMessage || 'Thank you for getting in touch!'}
-        </div>
-      )}
 
       {errors._form && (
         <div role="alert" className="alert alert-danger" style={{ marginBottom: '1rem' }}>{errors._form}</div>
@@ -304,32 +299,43 @@ export default function ContactFormClient({
         )}
 
         <div>
-          {/* Themed like the site's Button blocks so it reflects Styles → Buttons
-              (falls back to the primary colour) rather than the admin green button. */}
-          <button
-            type="submit"
-            className="cactus-btn"
-            disabled={submitting}
-            style={{
-              display: 'inline-block',
-              fontFamily: 'var(--btn-family)',
-              fontWeight: 'var(--btn-weight, 600)',
-              fontSize: 'var(--btn-size, 0.9375rem)',
-              lineHeight: 'var(--btn-line-height, normal)',
-              letterSpacing: 'var(--btn-letter-spacing, normal)',
-              textTransform: 'var(--btn-transform, none)' as React.CSSProperties['textTransform'],
-              fontStyle: 'var(--btn-style, normal)',
-              borderRadius: 'var(--btn-radius, 6px)',
-              padding: 'var(--btn-padding, 0.625rem 1.5rem)',
-              background: 'var(--btn-bg, var(--color-primary))',
-              color: 'var(--btn-text-color, var(--color-bg))',
-              border: 'var(--btn-border-width, 0) solid var(--btn-border, transparent)',
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.7 : 1,
-            }}
-          >
-            {submitting ? 'Sending...' : (submitLabel || 'Send Message')}
-          </button>
+          {/* The thank-you sits where the button was until they touch the form
+              again, at which point set() clears `sent` and the button comes
+              back. Polite rather than assertive: the form is still on the
+              screen and still theirs to use, so this is news rather than an
+              interruption. */}
+          {sent ? (
+            <div role="status" className="alert alert-success">
+              {config.successMessage || 'Thank you for getting in touch!'}
+            </div>
+          ) : (
+            /* Themed like the site's Button blocks so it reflects Styles → Buttons
+               (falls back to the primary colour) rather than the admin green button. */
+            <button
+              type="submit"
+              className="cactus-btn"
+              disabled={submitting}
+              style={{
+                display: 'inline-block',
+                fontFamily: 'var(--btn-family)',
+                fontWeight: 'var(--btn-weight, 600)',
+                fontSize: 'var(--btn-size, 0.9375rem)',
+                lineHeight: 'var(--btn-line-height, normal)',
+                letterSpacing: 'var(--btn-letter-spacing, normal)',
+                textTransform: 'var(--btn-transform, none)' as React.CSSProperties['textTransform'],
+                fontStyle: 'var(--btn-style, normal)',
+                borderRadius: 'var(--btn-radius, 6px)',
+                padding: 'var(--btn-padding, 0.625rem 1.5rem)',
+                background: 'var(--btn-bg, var(--color-primary))',
+                color: 'var(--btn-text-color, var(--color-bg))',
+                border: 'var(--btn-border-width, 0) solid var(--btn-border, transparent)',
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                opacity: submitting ? 0.7 : 1,
+              }}
+            >
+              {submitting ? 'Sending...' : (submitLabel || 'Send Message')}
+            </button>
+          )}
         </div>
       </form>
     </div>
