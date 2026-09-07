@@ -4,7 +4,6 @@ import { prisma } from '@/lib/db/prisma'
 import { INSTALLED_MODULE_WHERE } from '@/lib/modules/live-status'
 import { getSubmissions } from '@/modules/contact-form/lib/db'
 import SubmissionList from '@/modules/contact-form/components/admin/SubmissionList'
-import { moduleExtensionPointComponents } from '@/lib/modules/extension-points'
 import { headers } from 'next/headers'
 
 // The contact inbox as a panel, published into core's `core.inbox-tabs` point so
@@ -59,6 +58,13 @@ export async function ContactFormInboxPanel({
       }
     }
   }
+  // Dynamic on purpose: this file is reached FROM the generated registry
+  // (it contributes a component of its own), so a static import back to it
+  // closes a cycle. Turbopack merges a cycle into one scope and can fail a
+  // production build with "Cannot access 'x' before initialization", on some
+  // module sets and not others. See scripts/check-import-cycles.mjs.
+  const { moduleExtensionPointComponents } =
+    await import('@/lib/modules/extension-points')
   const inboxActionComponents = moduleExtensionPointComponents['contact-form.inbox-actions'] ?? {}
 
   return (
