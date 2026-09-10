@@ -1,17 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminPath } from '@/components/admin/AdminPathContext'
+import { ReplySuggestions } from '@/components/admin/ReplySuggestions'
 import MarkdownEditor from '@/modules/contact-form/components/admin/MarkdownEditor'
 
 type Props = {
   submissionId: string
   submissionEmail: string
+  /** Whether anything on this site can draft a reply. Decided on the server -
+   *  see lib/conversations/reply-suggestions.ts - so a site with no such module
+   *  never draws the button rather than drawing one that answers 409. */
+  canSuggest?: boolean
 }
 
-export default function ReplyComposer({ submissionId, submissionEmail }: Props) {
+export default function ReplyComposer({ submissionId, submissionEmail, canSuggest = false }: Props) {
   const router = useRouter()
   const adminPath = useAdminPath()
   const [body, setBody] = useState('')
@@ -21,6 +26,27 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
   const [signatureHtml, setSignatureHtml] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // What was in the box before a suggestion was tried in it. Stashed on the
+  // FIRST preview and not on any after it, so flicking between three drafts
+  // still puts back what somebody actually wrote rather than the draft they
+  // looked at before this one.
+  const beforePreview = useRef<string | null>(null)
+
+  const previewSuggestion = useCallback((text: string | null) => {
+    if (text === null) {
+      if (beforePreview.current !== null) setBody(beforePreview.current)
+      beforePreview.current = null
+      return
+    }
+    if (beforePreview.current === null) beforePreview.current = body
+    setBody(text)
+  }, [body])
+
+  const acceptSuggestion = useCallback((text: string) => {
+    beforePreview.current = null
+    setBody(text)
+  }, [])
 
   useEffect(() => {
     fetch('/api/m/contact-form/admin/signature')
@@ -66,6 +92,17 @@ export default function ReplyComposer({ submissionId, submissionEmail }: Props) 
             placeholder="Write your reply here... (markdown supported)"
           />
         </div>
+
+        {canSuggest && (
+          <div style={{ marginBottom: '0.75rem' }}>
+            <ReplySuggestions
+              endpoint={`/api/m/contact-form/admin/submissions/${submissionId}/suggest-reply`}
+              disabled={sending}
+              onPreview={previewSuggestion}
+              onAccept={acceptSuggestion}
+            />
+          </div>
+        )}
 
         {signatureHtml && (
           <div style={{ marginBottom: '0.75rem' }}>

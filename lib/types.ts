@@ -131,6 +131,13 @@ export type ThreadMessageContribution = {
    *  so a contributor must not put raw user input here. */
   bodyHtml?: string
   badge?: string
+  /** Which way this one went: `in` from the person who wrote in, `out` from
+   *  somebody here. The timeline itself does not care - it draws both the same
+   *  way - but anything READING the conversation rather than showing it does,
+   *  and a caught reply can be either. Absent means `in`, which is what a
+   *  contribution was when this point only carried the submitter's own
+   *  replies. */
+  direction?: 'in' | 'out'
 }
 
 export type PaginatedSubmissions = {

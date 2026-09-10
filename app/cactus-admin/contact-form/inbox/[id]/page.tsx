@@ -5,7 +5,8 @@ import { hasPermission } from '@/lib/permissions/check'
 import { prisma } from '@/lib/db/prisma'
 import { INSTALLED_MODULE_WHERE } from '@/lib/modules/live-status'
 import { getSubmission, updateSubmission } from '@/modules/contact-form/lib/db'
-import type { ThreadMessageContribution } from '@/modules/contact-form/lib/types'
+import { threadMessagesFor } from '@/modules/contact-form/lib/thread'
+import { canSuggestReplies } from '@/lib/conversations/reply-suggestions'
 import { markdownToHtml } from '@/lib/sanitize'
 import ReplyComposer from '@/modules/contact-form/components/admin/ReplyComposer'
 import DeleteSubmissionButton from '@/modules/contact-form/components/admin/DeleteSubmissionButton'
@@ -68,44 +69,17 @@ export default async function SubmissionDetailPage({ params }: Props) {
   // Other modules (e.g. Reply Catcher) can contribute extra thread messages
   // (e.g. replies caught from a real mailbox) via the "contact-form.thread-messages"
   // extension point. Contributions are merged chronologically with the
-  // submission's own replies into a single timeline below.
-  const threadExtraIds: string[] = []
-  for (const mod of activeModules) {
-    const manifest = mod.manifest as { extensionPoints?: ExtensionPointEntry[] } | null
-    if (!manifest?.extensionPoints) continue
-    for (const entry of manifest.extensionPoints) {
-      if (entry.point !== 'contact-form.thread-messages') continue
-      if (!entry.permission || await hasPermission(user, entry.permission)) {
-        threadExtraIds.push(entry.id)
-      }
-    }
-  }
-  const threadExtraFns = moduleExtensionPointComponents['contact-form.thread-messages'] ?? {}
-  const threadContributions = (
-    await Promise.all(
-      threadExtraIds.map((extraId) => {
-        const getMessages = threadExtraFns[extraId] as
-          | ((submissionId: string) => Promise<ThreadMessageContribution[]>)
-          | undefined
-        return getMessages ? getMessages(id) : Promise.resolve([])
-      })
-    )
-  ).flat()
-
-  const threadMessages: ThreadMessageContribution[] = [
-    ...submission.replies.map((reply) => ({
-      id: reply.id,
-      createdAt: reply.createdAt,
-      senderLabel: reply.sentByDisplayName ?? reply.sentByEmail,
-      body: reply.body,
-      // The signature exactly as it was sent. Replies from before signature
-      // kinds existed have only the markdown source, so those are rendered the
-      // way they always were.
-      bodyHtml: reply.signatureSnapshotHtml
-        ?? (reply.signatureSnapshot ? markdownToHtml(reply.signatureSnapshot, { breaks: true }) : undefined),
-    })),
-    ...threadContributions,
-  ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+  // submission's own replies into a single timeline below - in lib/thread.ts,
+  // because the reply box's "suggest me something" has to read exactly the same
+  // conversation this page draws.
+  //
+  // Whether there is anything on this site that could suggest a reply at all is
+  // asked here, once, rather than by the browser: a site with no such module
+  // installed simply never draws the button. See lib/conversations/types.ts.
+  const [threadMessages, canSuggest] = await Promise.all([
+    threadMessagesFor(submission, user),
+    canReply ? canSuggestReplies() : Promise.resolve(false),
+  ])
 
   return (
     <div>
@@ -220,7 +194,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
       })}
 
       {canReply && (
-        <ReplyComposer submissionId={id} submissionEmail={submission.email} />
+        <ReplyComposer submissionId={id} submissionEmail={submission.email} canSuggest={canSuggest} />
       )}
     </div>
   )
