@@ -194,7 +194,14 @@ export default async function SubmissionDetailPage({ params }: Props) {
       })}
 
       {canReply && (
-        <ReplyComposer submissionId={id} submissionEmail={submission.email} canSuggest={canSuggest} />
+        <ReplyComposer
+          submissionId={id}
+          submissionEmail={submission.email}
+          canSuggest={canSuggest}
+          /* The enquiry itself is never in this list, so an empty one means the
+             customer wrote and nobody has answered - which is not a chase. */
+          chasing={threadMessages[threadMessages.length - 1]?.direction === 'out'}
+        />
       )}
     </div>
   )

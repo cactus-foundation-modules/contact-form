@@ -14,9 +14,14 @@ type Props = {
    *  see lib/conversations/reply-suggestions.ts - so a site with no such module
    *  never draws the button rather than drawing one that answers 409. */
   canSuggest?: boolean
+  /** Whether the last word on this enquiry was ours, so the button says what it
+   *  is actually going to do: a thread ending with our own reply wants chasing,
+   *  and offering "Suggest reply" on one reads as an offer to reply to
+   *  yourself. */
+  chasing?: boolean
 }
 
-export default function ReplyComposer({ submissionId, submissionEmail, canSuggest = false }: Props) {
+export default function ReplyComposer({ submissionId, submissionEmail, canSuggest = false, chasing = false }: Props) {
   const router = useRouter()
   const adminPath = useAdminPath()
   const [body, setBody] = useState('')
@@ -100,6 +105,7 @@ export default function ReplyComposer({ submissionId, submissionEmail, canSugges
               disabled={sending}
               onPreview={previewSuggestion}
               onAccept={acceptSuggestion}
+              label={chasing ? 'Suggest a follow-up' : 'Suggest reply'}
             />
           </div>
         )}
