@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma'
 import { createReply, getSubmission, getUserProfile, updateSubmission } from './db'
+import type { EmailAttachment } from '@/lib/email/index'
 import { sendReply, getContactEmailContext } from './email'
 import { renderSignature, signatureSnapshot } from './signature'
 import { syncMessagesNotification } from './notify'
@@ -31,6 +32,11 @@ export async function replyToSubmission(input: {
   userId: string
   authorDisplayName: string | null
   authorEmail: string
+  /** A subject typed over the usual "Re: ..." one. */
+  subject?: string
+  /** Formatted markup for the reply, when it was written with formatting. */
+  html?: string
+  attachments?: EmailAttachment[]
 }): Promise<ReplyOutcome> {
   const submission = await getSubmission(input.submissionId)
   if (!submission) return { ok: false, reason: 'That enquiry is not here any more.' }
@@ -59,6 +65,9 @@ export async function replyToSubmission(input: {
       signature,
       fromEmail: siteConfig?.emailFromAddress ?? '',
       emailContext,
+      subject: input.subject,
+      replyHtml: input.html,
+      attachments: input.attachments,
     })
   } catch (err) {
     console.error('[contact-form] Reply email failed:', err)
@@ -72,6 +81,7 @@ export async function replyToSubmission(input: {
     submissionId: input.submissionId,
     sentById: input.userId,
     body: input.body,
+    bodyHtml: input.html ?? null,
     ...signatureSnapshot(profile, signature),
   })
 

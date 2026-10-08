@@ -1,7 +1,8 @@
 import { sendEmail } from '@/lib/email/index'
 import { renderEmailTemplate, getSiteEmailContext, type SiteEmailContext } from '@/lib/email/render'
 import { getEmailPalette, resolveEmailWrapper, wrapEmailHtml, type EmailPalette, type EmailWrapperLayout } from '@/lib/email/wrapper'
-import { markdownToHtml, markdownToPlainText } from '@/lib/sanitize'
+import { markdownToHtml, markdownToPlainText, sanitizeEmailHtml } from '@/lib/sanitize'
+import type { EmailAttachment } from '@/lib/email/index'
 import type { ContactFormConfig, ContactSubmission } from './types'
 import type { RenderedSignature } from './signature'
 
@@ -192,13 +193,27 @@ export async function sendReply(opts: {
   /** Shared with the signature render, so one reply reads the site config once
    *  rather than twice. */
   emailContext: ContactEmailContext
+  /** The subject to send under, when the person answering changed it. Left
+   *  out is "Re:" and the enquiry's own, which is what every reply used to say. */
+  subject?: string
+  /** The reply as formatted markup, from a writing box that can format. Used in
+   *  place of turning `replyBody` into markup; `replyBody` is then its plain
+   *  words, for the text half. Cleaned again here whatever the caller did. */
+  replyHtml?: string
+  /** Files travelling with it. */
+  attachments?: EmailAttachment[]
 }): Promise<void> {
   const { submission, replyBody, signature, emailContext } = opts
 
-  const bodyHtml = markdownToHtml(replyBody, { breaks: true })
-  const bodyText = markdownToPlainText(replyBody, { breaks: true })
+  const bodyHtml = opts.replyHtml
+    ? sanitizeEmailHtml(opts.replyHtml)
+    : markdownToHtml(replyBody, { breaks: true })
+  const bodyText = opts.replyHtml
+    ? replyBody
+    : markdownToPlainText(replyBody, { breaks: true })
 
-  const emailSubject = submission.subject ? `Re: ${submission.subject}` : 'Re: Your contact form message'
+  const emailSubject = opts.subject?.trim()
+    || (submission.subject ? `Re: ${submission.subject}` : 'Re: Your contact form message')
   const inner = signature ? `${bodyHtml}${SIGNATURE_RULE}${signature.html}` : bodyHtml
 
   await sendEmail({
@@ -207,5 +222,6 @@ export async function sendReply(opts: {
     subject: emailSubject,
     html: wrapForVisitor(inner, emailSubject, emailContext),
     text: signature ? `${bodyText}\n\n---\n\n${signature.text}` : bodyText,
+    attachments: opts.attachments?.length ? opts.attachments : undefined,
   })
 }

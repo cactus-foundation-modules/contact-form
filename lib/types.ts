@@ -76,6 +76,9 @@ export type ContactSubmissionReply = {
   sentByDisplayName: string | null
   sentByEmail: string
   body: string
+  /** The formatted version that went out, when the reply was written with
+   *  formatting. Null for a plain markdown reply. */
+  bodyHtml: string | null
   signatureSnapshot: string | null
   /** null on replies sent before signature kinds existed - those are markdown. */
   signatureSnapshotKind: SignatureKind | null

@@ -1,8 +1,8 @@
 {
   "name": "contact-form",
-  "version": "0.1.45",
+  "version": "0.1.46",
   "tablePrefix": "cf_",
-  "requiresCoreVersion": "0.5.1574",
+  "requiresCoreVersion": "0.5.1731",
   "emailTemplates": {
     "groupLabel": "Contact form",
     "import": "./lib/email-templates",

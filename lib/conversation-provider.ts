@@ -3,6 +3,7 @@ import type {
   ConversationListOptions,
   ConversationListPage,
   ConversationMessage,
+  ConversationOutgoingAttachment,
   ConversationProvider,
   ConversationSummary,
   ConversationThread,
@@ -114,7 +115,9 @@ async function thread(id: string): Promise<ConversationThread | null> {
       // The body is markdown as it was typed; the signature was rendered at the
       // moment it went out and is stored as the markup that was actually sent.
       text: markdownToPlainText(reply.body, { breaks: true }),
-      html: reply.signatureSnapshotHtml,
+      html: reply.bodyHtml
+        ? `${reply.bodyHtml}${reply.signatureSnapshotHtml ?? ''}`
+        : reply.signatureSnapshotHtml,
       sentAt: reply.createdAt,
       attachments: [],
     })),
@@ -125,7 +128,7 @@ async function thread(id: string): Promise<ConversationThread | null> {
 
 async function send(
   id: string,
-  body: { text: string; html?: string; authorUserId: string },
+  body: { text: string; html?: string; authorUserId: string; subject?: string; attachments?: ConversationOutgoingAttachment[] },
 ): Promise<void> {
   // Straight through the module's own reply path, so the site's signature, its
   // email design and its unread count all behave exactly as they do when
@@ -142,6 +145,14 @@ async function send(
     userId: body.authorUserId,
     authorDisplayName: author.displayName ?? null,
     authorEmail: author.email,
+    subject: body.subject,
+    // Formatting travels as markup; the plain words stay the record of it.
+    html: body.html?.trim() ? body.html : undefined,
+    attachments: body.attachments?.map((file) => ({
+      filename: file.filename,
+      content: file.content,
+      contentType: file.contentType ?? undefined,
+    })),
   })
   if (!result.ok) throw new Error(result.reason)
 }
@@ -163,7 +174,9 @@ async function byIdentity(identity: { emails: string[] }): Promise<ConversationS
 export const contactFormConversationProvider: ConversationProvider = {
   label: 'Contact form',
   channel: 'form',
-  capabilities: { reply: true, markRead: true, byIdentity: true },
+  // An enquiry is answered by email, so the hub may offer a subject on the
+  // reply and a forward to somebody else, exactly as it does on any mail.
+  capabilities: { reply: true, markRead: true, byIdentity: true, email: true },
   list,
   thread,
   send,

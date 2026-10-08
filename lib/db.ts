@@ -123,7 +123,7 @@ export async function getSubmission(id: string): Promise<SubmissionWithReplies |
     `,
     prisma.$queryRaw<Array<{
       id: string; created_at: Date; submission_id: string; sent_by_id: string;
-      body: string; signature_snapshot: string | null;
+      body: string; body_html: string | null; signature_snapshot: string | null;
       signature_snapshot_kind: string | null; signature_snapshot_html: string | null;
       display_name: string | null; user_email: string;
     }>>`
@@ -146,6 +146,7 @@ export async function getSubmission(id: string): Promise<SubmissionWithReplies |
     sentByDisplayName: r.display_name,
     sentByEmail: r.user_email,
     body: r.body,
+    bodyHtml: r.body_html,
     signatureSnapshot: r.signature_snapshot,
     signatureSnapshotKind: isSignatureKind(r.signature_snapshot_kind) ? r.signature_snapshot_kind : null,
     signatureSnapshotHtml: r.signature_snapshot_html,
@@ -190,6 +191,8 @@ type CreateReplyData = {
   submissionId: string
   sentById: string
   body: string
+  /** The formatted version that went out, when there was one. */
+  bodyHtml?: string | null
   /** The markdown source, when there was one. Kept for the markdown kind so an
    *  old reply still renders the way it always did. */
   signatureSnapshot: string | null
@@ -202,11 +205,11 @@ type CreateReplyData = {
 export async function createReply(data: CreateReplyData): Promise<string> {
   const rows = await prisma.$queryRaw<[{ id: string }]>`
     INSERT INTO "cf_contact_submission_replies"
-      ("id", "submission_id", "sent_by_id", "body", "signature_snapshot",
+      ("id", "submission_id", "sent_by_id", "body", "body_html", "signature_snapshot",
        "signature_snapshot_kind", "signature_snapshot_html")
     VALUES
       (gen_random_uuid()::text, ${data.submissionId}, ${data.sentById},
-       ${data.body}, ${data.signatureSnapshot},
+       ${data.body}, ${data.bodyHtml ?? null}, ${data.signatureSnapshot},
        ${data.signatureSnapshotKind}, ${data.signatureSnapshotHtml})
     RETURNING "id"
   `
