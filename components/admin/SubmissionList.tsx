@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAdminPath } from '@/components/admin/AdminPathContext'
+import { useAdminConfirm } from '@/components/admin/useAdminConfirm'
 import type { ContactSubmission } from '@/modules/contact-form/lib/types'
 
 // Matches ICON_PROPS in components/admin/AdminNav.tsx — same stroke family throughout the admin.
@@ -80,6 +81,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
   const base = `/${adminPath}`
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
+  const [askConfirm, confirmNode] = useAdminConfirm()
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({})
 
   function toggleAll() {
@@ -101,7 +103,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
 
   async function bulkAction(action: 'read' | 'archived' | 'unread' | 'delete') {
     if (!selected.size) return
-    if (action === 'delete' && !confirm(`Delete ${selected.size} submission(s)?`)) return
+    if (action === 'delete' && !(await askConfirm({ title: `Delete ${selected.size} submission${selected.size === 1 ? '' : 's'}?`, message: 'Their replies go with them.' }))) return
     setBusy(true)
     const body = action === 'delete'
       ? { ids: [...selected], delete: true }
@@ -117,7 +119,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
   }
 
   async function rowAction(id: string, action: 'read' | 'unread' | 'archived' | 'delete') {
-    if (action === 'delete' && !confirm('Delete this submission and all its replies?')) return
+    if (action === 'delete' && !(await askConfirm({ title: 'Delete this submission?', message: 'All its replies are deleted with it.' }))) return
     setRowBusy((prev) => ({ ...prev, [id]: true }))
     if (action === 'delete') {
       await fetch(`/api/m/contact-form/admin/submissions/${id}`, { method: 'DELETE' })
@@ -134,6 +136,7 @@ export default function SubmissionList({ submissions, total, page, totalPages, s
 
   return (
     <div>
+      {confirmNode}
       <div style={{ display: 'flex', gap: 0, alignItems: 'center', borderBottom: '1px solid var(--color-border)', marginBottom: '1rem', overflowX: 'auto' }}>
         {TABS.map((tab) => (
           <Link
