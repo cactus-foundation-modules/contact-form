@@ -1,6 +1,6 @@
 {
   "name": "contact-form",
-  "version": "0.1.47",
+  "version": "0.1.48",
   "tablePrefix": "cf_",
   "requiresCoreVersion": "0.5.1772",
   "emailTemplates": {
@@ -46,7 +46,8 @@
       "type": "ContactForm",
       "import": "./components/puck/ContactFormBlock",
       "component": "contactFormPuckComponent",
-      "rscComponent": "contactFormPuckRscComponent"
+      "rscComponent": "contactFormPuckRscComponent",
+      "layoutTypes": ["liveChatOffline"]
     }
   ]
 }
