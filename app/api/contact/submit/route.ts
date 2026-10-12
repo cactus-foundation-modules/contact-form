@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
+import { announceConversationArrived } from '@/lib/conversations/arrived'
 import { createSubmission, getSubmission } from '@/modules/contact-form/lib/db'
 import { syncMessagesNotification } from '@/modules/contact-form/lib/notify'
 import { validateSubmission, sanitiseField } from '@/modules/contact-form/lib/validate'
@@ -220,6 +221,11 @@ export async function POST(request: NextRequest) {
     formTitle: config.formTitle,
     destinationId: config.destinationId,
   })
+
+  // Anything that keeps a copy of the enquiries (the unified inbox) fetches this
+  // one now rather than at its next hourly sync. After the response, so the
+  // visitor's thank-you never waits on it; it cannot fail the submission.
+  after(() => announceConversationArrived({ moduleName: 'contact-form', providerId: 'contact-form', conversationId: submissionId }))
 
   // Keep the rolling "N unread messages" admin notification in step with the inbox.
   syncMessagesNotification().catch((err) =>
