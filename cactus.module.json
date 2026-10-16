@@ -1,7 +1,10 @@
 {
   "name": "contact-form",
-  "version": "0.1.50",
+  "version": "0.1.51",
   "tablePrefix": "cf_",
+  "notificationKinds": [
+    {"id": "messages", "label": "Contact form messages", "description": "Unread messages from your contact forms.", "dedupePrefix": "contact-form:messages"}
+  ],
   "requiresCoreVersion": "0.5.1821",
   "emailTemplates": {
     "groupLabel": "Contact form",
